@@ -103,10 +103,12 @@ generate_report(sol_stock, farm_sum, seq_pot, recos, rf_result, soc_map)
 | `generate_report()` | Rapport HTML/PDF |
 ## 📊 Visualizations
 
+
 ### SOC Map
-![SOC Map](outputs/soc_map.png)
+![SOC Map](https://raw.githubusercontent.com/hebaelLLL/farmCarboneR/main/outputs/soc_map.png)
 
 ### Feature Importance
-![Feature Importance](outputs/feature_importance.png)
+![Feature Importance](https://raw.githubusercontent.com/hebaelLLL/farmCarboneR/main/outputs/feature_importance.png)
+
 ## Licence
 MIT (c) 2024
