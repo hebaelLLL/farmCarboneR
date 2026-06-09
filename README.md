@@ -109,6 +109,9 @@ generate_report(sol_stock, farm_sum, seq_pot, recos, rf_result, soc_map)
 
 ### Feature Importance
 ![Feature Importance](https://raw.githubusercontent.com/hebaelLLL/farmCarboneR/main/outputs/feature_importance.png)
+## 📄 Rapport complet
 
+Le rapport d'analyse est disponible ici :
+- [Voir le rapport HTML](https://htmlpreview.github.io/?https://github.com/hebaelLLL/farmCarboneR/blob/main/outputs/rapport_carbone.html)
 ## Licence
 MIT (c) 2024
