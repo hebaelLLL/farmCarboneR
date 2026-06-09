@@ -1,0 +1,77 @@
+---
+title: "Introduction a farmCarbonR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction a farmCarbonR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+## Description
+
+farmCarbonR est un package R pour estimer et cartographier les stocks de
+carbone organique du sol (SOC) en contexte agricole marocain.
+
+## Donnees d exemple
+
+```{r}
+library(sf)
+library(farmCarbonR)
+
+# Creer des donnees exemple
+df <- data.frame(
+  parcelle_id = paste0("P", sprintf("%03d", 1:5)),
+  SOC_mean    = c(18.5, 20.1, 15.3, 22.0, 17.8),
+  BD_mean     = c(1.35, 1.42, 1.38, 1.30, 1.45),
+  lon         = c(-5.0, -5.1, -5.2, -4.9, -5.3),
+  lat         = c(32.0, 32.1, 31.9, 32.2, 32.0)
+)
+sol <- sf::st_as_sf(df, coords=c("lon","lat"), crs=4326, remove=FALSE)
+```
+
+## Calcul du stock SOC
+
+```{r}
+sol_stock <- calculate_soc_stock(sol, depth=30)
+print(sol_stock[, c("parcelle_id","SOC_stock_tCha")])
+```
+
+## Potentiel de sequestration
+
+```{r}
+seq_pot <- estimate_sequestration_potential(
+  sol_stock,
+  scenarios = c("cover_crop","no_tillage","organic_fert","all_combined")
+)
+print(seq_pot[, c("parcelle_id","SOC_stock_tCha","max_gain_tCha","best_scenario")])
+```
+
+## Resume des parcelles
+
+```{r}
+farm_sum <- summarize_farms(sol_stock, seq_pot)
+print(farm_sum[, c("parcelle_id","SOC_categorie","priorite_seq")])
+```
+
+## Recommandations
+
+```{r}
+recos <- generate_recommendations(farm_sum, seq_pot)
+print(recos[, c("parcelle_id","SOC_stock_tCha","recommandations")])
+```
+
+## Donnees environnementales
+
+```{r}
+# WorldClim
+wc <- load_worldclim(country="MA")
+print(wc)
+
+# NDVI
+ndvi <- load_ndvi(ndvi_value=0.35)
+print(ndvi)
+```
