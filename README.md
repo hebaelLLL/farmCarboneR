@@ -71,12 +71,16 @@ generate_report(sol_stock, farm_sum, seq_pot, recos, rf_result, soc_map)
 | Fertilisation organique | +15.96 |
 | Toutes pratiques | +31.92 |
 
-### Performance du modele Random Forest
-| Metrique | Valeur |
-|----------|--------|
-| RMSE Test | voir rf_result$rmse_test |
-| R2 Test | voir rf_result$r2_test |
+### Performance du modèle Random Forest
+| Métrique | Train | Test |
+|----------|-------|------|
+| RMSE | 4.60 | 33.44 |
+| R² | 0.84 | 0.28 |
 
+> **Note** : L'écart train/test indique un surapprentissage,
+> probablement dû à la taille limitée de l'échantillon (n=20).
+> Une collecte de données supplémentaires améliorerait
+> la généralisation du modèle.
 ### Variabilite spatiale
 - Coefficient de variation : 22.6%
 - Indice de Moran I : 0.1317 (p=0.0585)
