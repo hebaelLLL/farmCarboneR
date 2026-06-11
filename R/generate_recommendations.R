@@ -1,39 +1,63 @@
-#' @title Generer des recommandations agronomiques
-#' @description Produit des recommandations par parcelle selon le stock SOC.
-#' @param farm_summary data.frame retourne par summarize_farms()
-#' @param seq_potential data.frame retourne par estimate_sequestration_potential()
-#' @param output_dir dossier de sauvegarde
-#' @return data.frame avec recommandations par parcelle
+#' Générer des recommandations automatiques
+#'
+#' Génère des recommandations de gestion selon le stock SOC et les pratiques.
+#'
+#' @param data Data frame avec SOC_stock_tCha et pratiques agricoles.
+#' @param seuil_faible Numérique. Seuil SOC faible (tC/ha). Par défaut 40.
+#'
+#' @return Data frame avec recommandations par parcelle.
 #' @export
-#' @examples
-#' # reco <- generate_recommendations(farm_summary, seq_potential)
-generate_recommendations <- function(farm_summary, seq_potential,
-  output_dir="C:/Users/PC Paradise/Desktop/farmCarbonR/outputs") {
-  dir.create(output_dir, showWarnings=FALSE, recursive=TRUE)
-  reco_list <- list()
-  for (i in seq_len(nrow(farm_summary))) {
-    pid <- farm_summary$parcelle_id[i]; soc <- farm_summary$SOC_stock_tCha[i]
-    best_sc <- gsub("^gain_|_tCha$","", as.character(farm_summary$best_scenario[i]))
-    recos <- if (!is.na(soc) && soc < 40) {
-      c("URGENT: Stock tres faible","Introduire couverts vegetaux",
-        "Apporter compost 10-15t/ha","Arreter labour profond")
-    } else if (!is.na(soc) && soc < 70) {
-      c("Stock faible","Legumineuses en rotation",
-        "Reduire labour","Apports organiques reguliers")
-    } else if (!is.na(soc) && soc < 90) {
-      c("Stock moyen -- maintenir pratiques",
-        "Maintenir couverts vegetaux","Rotation diversifiee")
-    } else c("Stock eleve -- conserver pratiques","Parcelle de reference")
-    sc_recos <- list(cover_crop="Priorite: couvert vegetal (+15%)",
-                     no_tillage="Priorite: semis direct (+10%)",
-                     organic_fert="Priorite: fertilisation organique (+20%)",
-                     all_combined="Priorite: toutes pratiques (+40%)")
-    if (!is.na(best_sc) && best_sc %in% names(sc_recos))
-      recos <- c(recos, sc_recos[[best_sc]])
-    reco_list[[pid]] <- data.frame(parcelle_id=pid, SOC_stock_tCha=soc,
-      recommandations=paste(recos,collapse=" | "), stringsAsFactors=FALSE)
+generate_recommendations <- function(data, seuil_faible = 40) {
+
+  if (!"SOC_stock_tCha" %in% names(data))
+    stop("Colonne SOC_stock_tCha manquante.")
+
+  data$recommandation <- ""
+
+  data$recommandation <- ifelse(
+    data$SOC_stock_tCha < seuil_faible,
+    paste0(data$recommandation, "SOC faible : augmenter matiere organique. "),
+    data$recommandation
+  )
+
+  if ("travail_sol" %in% names(data)) {
+    data$recommandation <- ifelse(
+      tolower(data$travail_sol) == "labour",
+      paste0(data$recommandation, "Reduire le labour : passer en semis direct. "),
+      data$recommandation
+    )
   }
-  reco_df <- do.call(rbind, reco_list)
-  write.csv(reco_df, file.path(output_dir,"recommendations.csv"), row.names=FALSE)
-  return(reco_df)
+
+  if ("couvert_vegetal" %in% names(data)) {
+    data$recommandation <- ifelse(
+      tolower(data$couvert_vegetal) == "non",
+      paste0(data$recommandation, "Ajouter des couverts vegetaux. "),
+      data$recommandation
+    )
+  }
+
+  if ("fertilisation_organique" %in% names(data)) {
+    data$recommandation <- ifelse(
+      tolower(data$fertilisation_organique) %in% c("aucune", "non"),
+      paste0(data$recommandation, "Ajouter compost ou fumier. "),
+      data$recommandation
+    )
+  }
+
+  if ("rotation" %in% names(data)) {
+    data$recommandation <- ifelse(
+      tolower(data$rotation) == "monoculture",
+      paste0(data$recommandation, "Ameliorer la rotation culturale. "),
+      data$recommandation
+    )
+  }
+
+  data$recommandation <- ifelse(
+    trimws(data$recommandation) == "",
+    "Bonnes pratiques : maintenir les pratiques actuelles.",
+    trimws(data$recommandation)
+  )
+
+  message(sprintf("Recommandations generees : %d parcelles.", nrow(data)))
+  return(data)
 }

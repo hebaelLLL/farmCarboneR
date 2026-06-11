@@ -18,7 +18,6 @@ Imports:
     terra (>= 1.5.0),
     randomForest (>= 4.7.0),
     ggplot2 (>= 3.4.0),
-    viridis (>= 0.6.0),
     spdep (>= 1.2.0),
     rmarkdown (>= 2.20),
     httr (>= 1.4.0),
@@ -28,8 +27,6 @@ Imports:
     utils
 Suggests:
     testthat (>= 3.0.0),
-    devtools (>= 2.4.0),
-    MODISTools,
     knitr
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0

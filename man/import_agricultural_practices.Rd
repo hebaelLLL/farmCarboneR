@@ -4,23 +4,26 @@
 \alias{import_agricultural_practices}
 \title{Importer les pratiques agricoles}
 \usage{
-import_agricultural_practices(path, coords_sf = NULL, join_by = "parcelle_id")
+import_agricultural_practices(
+  path,
+  format = "csv",
+  join_data = NULL,
+  join_by = "parcelle_id"
+)
 }
 \arguments{
-\item{path}{Chemin vers le fichier CSV ou Excel}
+\item{path}{Caractère. Chemin vers le fichier CSV ou Excel.}
 
-\item{coords_sf}{Objet sf issu de import_soil_data() pour jointure spatiale
-(optionnel — jointure par parcelle_id si NULL)}
+\item{format}{Caractère. "csv" ou "excel". Par défaut "csv".}
 
-\item{join_by}{Colonne de jointure (défaut: "parcelle_id")}
+\item{join_data}{Data frame optionnel à joindre (données sol).}
+
+\item{join_by}{Caractère. Colonne de jointure. Par défaut "parcelle_id".}
 }
 \value{
-data.frame harmonisé des pratiques agricoles avec colonnes standardisées :
-  parcelle_id, travail_sol, couvert_vegetal, irrigation, fertilisation_organique
+Data frame des pratiques agricoles harmonisées.
 }
 \description{
-Importer les pratiques agricoles
-}
-\examples{
-# pratiques <- import_agricultural_practices('data/pratiques.csv')
+Importe les pratiques agricoles depuis un fichier CSV ou Excel.
+Variables : travail_sol, couvert_vegetal, irrigation, fertilisation_organique.
 }

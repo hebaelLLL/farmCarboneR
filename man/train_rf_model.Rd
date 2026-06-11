@@ -2,33 +2,34 @@
 % Please edit documentation in R/train_rf_model.R
 \name{train_rf_model}
 \alias{train_rf_model}
-\title{Entrainer un modele Random Forest}
+\title{Entrainer le modele Random Forest}
 \usage{
 train_rf_model(
-  sol_stock,
-  features = NULL,
+  train_data,
+  test_data = NULL,
+  target = "SOC_stock_tCha",
   ntree = 500,
-  test_size = 0.2,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
+  mtry = NULL,
+  seed = 42
 )
 }
 \arguments{
-\item{sol_stock}{sf object avec SOC_stock_tCha et covariables}
+\item{train_data}{Data frame d'entrainement.}
 
-\item{features}{vecteur de noms de covariables}
+\item{test_data}{Data frame de test (optionnel).}
 
-\item{ntree}{nombre d arbres (defaut: 500)}
+\item{target}{Variable cible. Par defaut "SOC_stock_tCha".}
 
-\item{test_size}{proportion jeu de test (defaut: 0.2)}
+\item{ntree}{Nombre d'arbres. Par defaut 500.}
 
-\item{output_dir}{dossier de sauvegarde}
+\item{mtry}{Variables par split. Par defaut NULL (auto).}
+
+\item{seed}{Graine. Par defaut 42.}
 }
 \value{
-liste avec model, rmse_train, rmse_test, r2_train, r2_test, features
+Liste : model, importance, oob_error, rmse_train, rmse_test,
+  r2_train, r2_test, predicteurs.
 }
 \description{
-Entraine un modele RF pour predire le stock SOC.
-}
-\examples{
-# rf <- train_rf_model(sol_stock)
+Entrainer le modele Random Forest
 }

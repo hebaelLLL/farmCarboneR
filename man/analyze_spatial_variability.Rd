@@ -2,24 +2,19 @@
 % Please edit documentation in R/analyze_spatial_variability.R
 \name{analyze_spatial_variability}
 \alias{analyze_spatial_variability}
-\title{Analyser la variabilite spatiale du SOC}
+\title{Analyser la variabilité spatiale du SOC}
 \usage{
-analyze_spatial_variability(
-  sol_stock,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
-)
+analyze_spatial_variability(data, krigeage = FALSE)
 }
 \arguments{
-\item{sol_stock}{sf object avec colonne SOC_stock_tCha}
+\item{data}{Data frame avec SOC_stock_tCha, lon, lat.}
 
-\item{output_dir}{dossier de sauvegarde}
+\item{krigeage}{Logique. Effectuer le krigeage ? Par défaut FALSE.}
 }
 \value{
-liste avec stats, moran et sol_classified
+Liste : stats, variogram_df, moran.
 }
 \description{
-Calcule statistiques descriptives et indice de Moran.
-}
-\examples{
-# res <- analyze_spatial_variability(sol_stock)
+Calcule le variogramme, l'autocorrélation spatiale (Moran)
+et optionnellement un krigeage simplifié.
 }

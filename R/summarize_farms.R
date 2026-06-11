@@ -1,27 +1,64 @@
 #' @title Resumer les donnees des parcelles agricoles
-#' @description Produit un tableau de bord par parcelle.
-#' @param sol_stock sf object avec colonnes SOC
-#' @param seq_potential data.frame retourne par estimate_sequestration_potential()
-#' @param pratiques data.frame de pratiques agricoles (optionnel)
-#' @param output_dir dossier de sauvegarde
-#' @return data.frame resume par parcelle
+#' @description Produit un tableau de bord par parcelle avec SOC,
+#'   potentiel de sequestration et pratiques agricoles.
+#' @param data Data frame avec SOC_stock_tCha et colonnes de pratiques.
+#' @return Liste : stats et detail.
 #' @export
-#' @examples
-#' # farm_summary <- summarize_farms(sol_stock, seq_potential)
-summarize_farms <- function(sol_stock, seq_potential, pratiques=NULL,
-  output_dir="C:/Users/PC Paradise/Desktop/farmCarbonR/data") {
-  dir.create(output_dir, showWarnings=FALSE, recursive=TRUE)
-  sol_df <- sf::st_drop_geometry(sol_stock)[,c("parcelle_id","SOC_mean","BD_mean","SOC_stock_tCha")]
-  summary_df <- merge(sol_df, seq_potential[,c("parcelle_id","max_gain_tCha","best_scenario")],
-                      by="parcelle_id", all.x=TRUE)
-  if (!is.null(pratiques) && "parcelle_id" %in% names(pratiques))
-    summary_df <- merge(summary_df, pratiques, by="parcelle_id", all.x=TRUE)
-  summary_df$SOC_categorie <- cut(summary_df$SOC_stock_tCha,
-    breaks=c(0,40,70,90,Inf),
-    labels=c("Tres faible","Faible","Moyen","Eleve"), include.lowest=TRUE)
-  summary_df$priorite_seq <- cut(summary_df$max_gain_tCha,
-    breaks=quantile(summary_df$max_gain_tCha, probs=c(0,0.33,0.67,1), na.rm=TRUE),
-    labels=c("Faible","Moyenne","Haute"), include.lowest=TRUE)
-  write.csv(summary_df, file.path(output_dir,"farm_summary.csv"), row.names=FALSE)
-  return(summary_df)
+summarize_farms <- function(data) {
+
+  if (!"SOC_stock_tCha" %in% names(data))
+    stop("Colonne SOC_stock_tCha manquante.")
+
+  cols_disponibles <- intersect(
+    c("parcelle_id", "SOC_stock_tCha", "gain_total_tCha",
+      "travail_sol", "couvert_vegetal", "fertilisation_organique"),
+    names(data)
+  )
+
+  if (inherits(data, 'sf')) data <- sf::st_drop_geometry(data)
+
+  # Categorisation SOC
+  data$SOC_categorie <- cut(
+    data$SOC_stock_tCha,
+    breaks = c(-Inf, 40, 70, 90, Inf),
+    labels = c("Tres faible (<40)", "Faible (40-70)",
+               "Moyen (70-90)",     "Eleve (>90)"),
+    right  = TRUE
+  )
+
+  # Meilleur scenario
+  gain_cols <- intersect(
+    c("gain_couvert_tCha", "gain_semis_direct_tCha", "gain_pratiques_tCha"),
+    names(data)
+  )
+  if (length(gain_cols) > 0) {
+    data$best_scenario <- apply(
+      data[, gain_cols, drop = FALSE], 1,
+      function(x) gain_cols[which.max(x)]
+    )
+    data$max_gain_tCha <- apply(
+      data[, gain_cols, drop = FALSE], 1, max, na.rm = TRUE
+    )
+  } else {
+    data$best_scenario <- NA_character_
+    data$max_gain_tCha <- NA_real_
+  }
+
+  stats <- data.frame(
+    n_parcelles     = nrow(data),
+    SOC_moyen       = round(mean(data$SOC_stock_tCha,  na.rm = TRUE), 2),
+    SOC_min         = round(min(data$SOC_stock_tCha,   na.rm = TRUE), 2),
+    SOC_max         = round(max(data$SOC_stock_tCha,   na.rm = TRUE), 2),
+    gain_moyen_tCha = round(mean(data$max_gain_tCha,   na.rm = TRUE), 2)
+  )
+
+  if ("travail_sol" %in% names(data)) {
+    stats$pratique_dominante <-
+      names(sort(table(data$travail_sol), decreasing = TRUE))[1]
+  }
+
+  message("Resume des parcelles :")
+  print(stats)
+
+  return(list(stats = stats, detail = data))
 }

@@ -2,27 +2,23 @@
 % Please edit documentation in R/calculate_soc_stock.R
 \name{calculate_soc_stock}
 \alias{calculate_soc_stock}
-\title{Calculer le stock de carbone organique}
+\title{Calculer le stock de carbone organique du sol}
 \usage{
-calculate_soc_stock(
-  sol_data,
-  depth = 30,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
-)
+calculate_soc_stock(sol_data, depth = 30, output_dir = "data")
 }
 \arguments{
-\item{sol_data}{sf object avec colonnes SOC_mean et BD_mean}
+\item{sol_data}{Data frame ou sf avec SOC_mean et BD_mean.}
 
-\item{depth}{profondeur en cm (defaut: 30)}
+\item{depth}{Profondeur en cm. Par defaut 30.}
 
-\item{output_dir}{dossier de sauvegarde}
+\item{output_dir}{Dossier de sortie. Par defaut "data".}
 }
 \value{
-sf object avec colonne SOC_stock_tCha
+sol_data avec colonne SOC_stock_tCha ajoutee.
 }
 \description{
-Calcule le stock SOC en tC/ha.
+Calculer le stock de carbone organique du sol
 }
 \examples{
-# sol_stock <- calculate_soc_stock(sol_data, depth=30)
+# sol_stock <- calculate_soc_stock(sol_data, depth = 30)
 }

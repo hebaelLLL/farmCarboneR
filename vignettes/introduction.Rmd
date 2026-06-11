@@ -21,8 +21,6 @@ carbone organique du sol (SOC) en contexte agricole marocain.
 ```{r}
 library(sf)
 library(farmCarbonR)
-
-# Creer des donnees exemple
 df <- data.frame(
   parcelle_id = paste0("P", sprintf("%03d", 1:5)),
   SOC_mean    = c(18.5, 20.1, 15.3, 22.0, 17.8),
@@ -37,7 +35,7 @@ sol <- sf::st_as_sf(df, coords=c("lon","lat"), crs=4326, remove=FALSE)
 
 ```{r}
 sol_stock <- calculate_soc_stock(sol, depth=30)
-print(sol_stock[, c("parcelle_id","SOC_stock_tCha")])
+print(sol_stock[, c("parcelle_id", "SOC_stock_tCha")])
 ```
 
 ## Potentiel de sequestration
@@ -45,33 +43,24 @@ print(sol_stock[, c("parcelle_id","SOC_stock_tCha")])
 ```{r}
 seq_pot <- estimate_sequestration_potential(
   sol_stock,
-  scenarios = c("cover_crop","no_tillage","organic_fert","all_combined")
+  gain_couvert      = 0.3,
+  gain_semis_direct = 0.25,
+  gain_compost      = 0.4
 )
-print(seq_pot[, c("parcelle_id","SOC_stock_tCha","max_gain_tCha","best_scenario")])
+print(seq_pot[, c("parcelle_id", "SOC_stock_tCha", "gain_total_tCha", "SOC_potentiel_tCha")])
 ```
 
 ## Resume des parcelles
 
 ```{r}
-farm_sum <- summarize_farms(sol_stock, seq_pot)
-print(farm_sum[, c("parcelle_id","SOC_categorie","priorite_seq")])
+farm_sum <- summarize_farms(seq_pot)
+print(farm_sum$detail[, c("parcelle_id", "SOC_categorie", "best_scenario")])
 ```
 
 ## Recommandations
 
 ```{r}
-recos <- generate_recommendations(farm_sum, seq_pot)
-print(recos[, c("parcelle_id","SOC_stock_tCha","recommandations")])
+recos <- generate_recommendations(farm_sum$detail)
+print(recos[, c("parcelle_id", "SOC_stock_tCha", "recommandation")])
 ```
 
-## Donnees environnementales
-
-```{r}
-# WorldClim
-wc <- load_worldclim(country="MA")
-print(wc)
-
-# NDVI
-ndvi <- load_ndvi(ndvi_value=0.35)
-print(ndvi)
-```

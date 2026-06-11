@@ -1,33 +1,53 @@
-#' @title Estimer le potentiel de sequestration carbone
-#' @description Calcule les gains potentiels en SOC par scenario.
-#' @param sol_stock sf object avec colonne SOC_stock_tCha
-#' @param scenarios vecteur de scenarios
-#' @param output_dir dossier de sauvegarde
-#' @return data.frame avec gains par scenario
+#' Estimer le potentiel de séquestration du carbone
+#'
+#' Compare trois scénarios agricoles et calcule le gain potentiel en carbone.
+#'
+#' @param data Data frame avec SOC_stock_tCha et colonnes de pratiques agricoles.
+#' @param gain_couvert Numérique. Gain SOC couvert végétal. Par défaut 0.3.
+#' @param gain_semis_direct Numérique. Gain SOC semis direct. Par défaut 0.25.
+#' @param gain_compost Numérique. Gain SOC apport organique. Par défaut 0.4.
+#'
+#' @return Data frame avec colonnes de gain par scénario et gain_total_tCha.
 #' @export
-#' @examples
-#' # seq_pot <- estimate_sequestration_potential(sol_stock)
-estimate_sequestration_potential <- function(sol_stock,
-  scenarios=c("cover_crop","no_tillage","organic_fert"),
-  output_dir="C:/Users/PC Paradise/Desktop/farmCarbonR/data") {
-  if (!"SOC_stock_tCha" %in% names(sol_stock)) stop("Colonne SOC_stock_tCha manquante.")
-  dir.create(output_dir, showWarnings=FALSE, recursive=TRUE)
-  scenario_factors <- list(cover_crop=0.15, no_tillage=0.10,
-                            organic_fert=0.20, all_combined=0.40)
-  base_stock <- sol_stock$SOC_stock_tCha
-  result <- sf::st_drop_geometry(sol_stock)[, c("parcelle_id","SOC_stock_tCha")]
-  for (sc in scenarios) {
-    if (!sc %in% names(scenario_factors)) next
-    gain <- base_stock * scenario_factors[[sc]]
-    result[[paste0("gain_",sc,"_tCha")]]  <- round(gain, 2)
-    result[[paste0("stock_",sc,"_tCha")]] <- round(base_stock + gain, 2)
+estimate_sequestration_potential <- function(data,
+                                             gain_couvert      = 0.3,
+                                             gain_semis_direct = 0.25,
+                                             gain_compost      = 0.4) {
+
+  if (!"SOC_stock_tCha" %in% names(data))
+    stop("Colonne SOC_stock_tCha manquante. Lancez calculate_soc_stock() d'abord.")
+
+  # Scénario 1 : couvert végétal
+  if ("couvert_vegetal" %in% names(data)) {
+    data$gain_couvert_tCha <- ifelse(
+      tolower(data$couvert_vegetal) == "non", gain_couvert, 0)
+  } else {
+    data$gain_couvert_tCha <- gain_couvert
   }
-  gain_cols <- grep("^gain_", names(result), value=TRUE)
-  if (length(gain_cols) > 0) {
-    result$best_scenario <- apply(result[,gain_cols,drop=FALSE], 1,
-      function(x) gsub("^gain_|_tCha$","",names(which.max(x))))
-    result$max_gain_tCha <- round(apply(result[,gain_cols,drop=FALSE], 1, max, na.rm=TRUE), 2)
+
+  # Scénario 2 : réduction labour
+  if ("travail_sol" %in% names(data)) {
+    data$gain_semis_direct_tCha <- ifelse(
+      tolower(data$travail_sol) == "labour", gain_semis_direct, 0)
+  } else {
+    data$gain_semis_direct_tCha <- gain_semis_direct
   }
-  write.csv(result, file.path(output_dir,"sequestration_potential.csv"), row.names=FALSE)
-  return(result)
+
+  # Scénario 3 : apport organique
+  if ("fertilisation_organique" %in% names(data)) {
+    data$gain_pratiques_tCha <- ifelse(
+      tolower(data$fertilisation_organique) == "aucune", gain_compost, 0)
+  } else {
+    data$gain_pratiques_tCha <- gain_compost
+  }
+
+  data$gain_total_tCha    <- data$gain_couvert_tCha +
+    data$gain_semis_direct_tCha +
+    data$gain_pratiques_tCha
+  data$SOC_potentiel_tCha <- data$SOC_stock_tCha + data$gain_total_tCha
+
+  message(sprintf("Gain moyen : %.2f tC/ha | Max : %.2f tC/ha",
+                  mean(data$gain_total_tCha, na.rm = TRUE),
+                  max(data$gain_total_tCha, na.rm = TRUE)))
+  return(data)
 }

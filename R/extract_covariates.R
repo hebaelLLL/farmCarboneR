@@ -1,20 +1,30 @@
+#' Extraire et joindre les covariables aux données sol
+#'
+#' Joint les covariables environnementales aux données pédologiques.
+#'
+#' @param soil_data Data frame. Données sol avec parcelle_id.
+#' @param env_data Data frame. Covariables environnementales avec parcelle_id.
+#'
+#' @return Data frame complet pour la modélisation.
+#' @export
+extract_covariates <- function(soil_data, env_data) {
 
-extract_covariates <- function(sol_sf, env_stack, pratiques = NULL, join_by = "parcelle_id") {
-  if (!requireNamespace("terra", quietly = TRUE)) stop("Package terra requis.")
-  if (!requireNamespace("sf",    quietly = TRUE)) stop("Package sf requis.")
-  coords_vect <- terra::vect(sol_sf)
-  extracted   <- terra::extract(env_stack, coords_vect, ID = FALSE)
-  sol_df      <- sf::st_drop_geometry(sol_sf)
-  data        <- cbind(sol_df, extracted)
-  if (!is.null(pratiques)) {
-    if (!join_by %in% names(pratiques)) stop("Colonne jointure absente des pratiques.")
-    data <- merge(data, pratiques, by = join_by, all.x = TRUE)
-  }
-  n_avant <- nrow(data)
-  data    <- data[complete.cases(data), ]
-  if (n_avant - nrow(data) > 0) warning(n_avant - nrow(data), " parcelle(s) supprimee(s) pour NA.")
-  cat(sprintf("Dataset : %d parcelles, %d variables
-", nrow(data), ncol(data)))
-  return(data)
+  if (!"parcelle_id" %in% names(soil_data))
+    stop("soil_data doit contenir parcelle_id.")
+  if (!"parcelle_id" %in% names(env_data))
+    stop("env_data doit contenir parcelle_id.")
+
+  soil_data$parcelle_id <- as.character(soil_data$parcelle_id)
+  env_data$parcelle_id  <- as.character(env_data$parcelle_id)
+
+  # Supprimer colonnes lon/lat dupliquées de env_data
+  env_clean <- dplyr::select(env_data,
+                             -dplyr::any_of(c("lon", "lat")))
+
+  result <- dplyr::left_join(soil_data, env_clean, by = "parcelle_id")
+  result <- tidyr::drop_na(result)
+
+  message(sprintf("Covariables extraites : %d observations, %d variables.",
+                  nrow(result), ncol(result)))
+  return(result)
 }
-

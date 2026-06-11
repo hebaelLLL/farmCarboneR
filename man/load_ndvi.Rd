@@ -2,36 +2,20 @@
 % Please edit documentation in R/load_ndvi.R
 \name{load_ndvi}
 \alias{load_ndvi}
-\title{Charger NDVI Maroc}
+\title{Charger le NDVI depuis MODIS}
 \usage{
-load_ndvi(
-  lon_min = -6.5,
-  lon_max = -4.5,
-  lat_min = 31,
-  lat_max = 33,
-  ndvi_value = 0.35,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
-)
+load_ndvi(coords, start_date = "2023-01-01", end_date = "2023-12-31")
 }
 \arguments{
-\item{lon_min}{longitude minimum (defaut: -6.5)}
+\item{coords}{Data frame avec colonnes parcelle_id, lon, lat.}
 
-\item{lon_max}{longitude maximum (defaut: -4.5)}
+\item{start_date}{Caractère. Date début. Par défaut "2023-01-01".}
 
-\item{lat_min}{latitude minimum  (defaut: 31.0)}
-
-\item{lat_max}{latitude maximum  (defaut: 33.0)}
-
-\item{ndvi_value}{valeur NDVI par defaut (defaut: 0.35)}
-
-\item{output_dir}{dossier de sauvegarde}
+\item{end_date}{Caractère. Date fin. Par défaut "2023-12-31".}
 }
 \value{
-SpatRaster avec couche NDVI
+Data frame avec colonnes parcelle_id, lon, lat, ndvi.
 }
 \description{
-Cree un raster NDVI sur la zone d etude marocaine.
-}
-\examples{
-# ndvi <- load_ndvi()
+Télécharge le NDVI réel depuis MODIS (MOD13A3) via MODISTools.
 }

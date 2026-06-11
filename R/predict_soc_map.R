@@ -1,35 +1,36 @@
-#' @title Predire la carte SOC spatiale
-#' @description Applique le modele RF sur un raster de covariables.
-#' @param rf_result liste retournee par train_rf_model()
-#' @param env_stack SpatRaster des covariables environnementales
-#' @param scale_params parametres de normalisation (optionnel)
-#' @param output_dir dossier de sauvegarde
-#' @return SpatRaster avec stock SOC predit en tC/ha
+#' Prédire la carte spatiale du stock SOC
+#'
+#' Applique le modèle Random Forest sur un raster stack pour produire
+#' une carte SOC et l'exporter en GeoTIFF.
+#'
+#' @param rf_result Liste. Résultat de train_rf_model().
+#' @param raster_stack SpatRaster. Stack de covariables environnementales.
+#' @param output_path Caractère. Chemin export GeoTIFF.
+#'
+#' @return SpatRaster de la carte SOC predite.
 #' @export
-#' @examples
-#' # soc_map <- predict_soc_map(rf_result, env_stack)
-predict_soc_map <- function(rf_result, env_stack, scale_params=NULL,
-  output_dir="C:/Users/PC Paradise/Desktop/farmCarbonR/data") {
-  if (!requireNamespace("terra",        quietly=TRUE)) stop("Package terra requis.")
-  if (!requireNamespace("randomForest", quietly=TRUE)) stop("Package randomForest requis.")
-  dir.create(output_dir, showWarnings=FALSE, recursive=TRUE)
-  model      <- rf_result$model
-  feats      <- rf_result$features
-  stack_pred <- env_stack[[feats]]
-  if (!is.null(scale_params)) {
-    for (col in names(scale_params)) {
-      if (col %in% names(stack_pred)) {
-        m <- scale_params[[col]]$mean; s <- scale_params[[col]]$sd
-        if (s > 0) stack_pred[[col]] <- (stack_pred[[col]] - m) / s
-      }
-    }
-  }
-  soc_map <- terra::predict(stack_pred, model, na.rm=TRUE)
-  names(soc_map) <- "SOC_stock_tCha"
-  cat(sprintf("SOC Map -- Min:%.2f Max:%.2f Moy:%.2f tC/ha\n",
-              terra::global(soc_map,"min",na.rm=TRUE)[1,1],
-              terra::global(soc_map,"max",na.rm=TRUE)[1,1],
-              terra::global(soc_map,"mean",na.rm=TRUE)[1,1]))
-  terra::writeRaster(soc_map, file.path(output_dir,"soc_map.tif"), overwrite=TRUE)
-  return(soc_map)
+predict_soc_map <- function(rf_result, raster_stack,
+                            output_path = "outputs/soc_map.tif") {
+
+  if (!inherits(raster_stack, "SpatRaster"))
+    stop("raster_stack doit etre un objet SpatRaster (terra).")
+
+  predicteurs <- rf_result$predicteurs
+  noms_raster <- names(raster_stack)
+  manquants   <- setdiff(predicteurs, noms_raster)
+
+  if (length(manquants) > 0)
+    stop(paste("Couches manquantes dans le raster :", paste(manquants, collapse = ", ")))
+
+  stack_pred <- raster_stack[[predicteurs]]
+
+  message("Prediction spatiale en cours...")
+  carte_soc <- terra::predict(stack_pred, rf_result$model, na.rm = TRUE)
+  names(carte_soc) <- "SOC_stock_tCha"
+
+  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
+  terra::writeRaster(carte_soc, output_path, overwrite = TRUE)
+  message(sprintf("Carte SOC exportee : %s", output_path))
+
+  return(carte_soc)
 }

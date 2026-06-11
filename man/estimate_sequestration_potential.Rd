@@ -2,27 +2,27 @@
 % Please edit documentation in R/estimate_sequestration_potential.R
 \name{estimate_sequestration_potential}
 \alias{estimate_sequestration_potential}
-\title{Estimer le potentiel de sequestration carbone}
+\title{Estimer le potentiel de séquestration du carbone}
 \usage{
 estimate_sequestration_potential(
-  sol_stock,
-  scenarios = c("cover_crop", "no_tillage", "organic_fert"),
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
+  data,
+  gain_couvert = 0.3,
+  gain_semis_direct = 0.25,
+  gain_compost = 0.4
 )
 }
 \arguments{
-\item{sol_stock}{sf object avec colonne SOC_stock_tCha}
+\item{data}{Data frame avec SOC_stock_tCha et colonnes de pratiques agricoles.}
 
-\item{scenarios}{vecteur de scenarios}
+\item{gain_couvert}{Numérique. Gain SOC couvert végétal. Par défaut 0.3.}
 
-\item{output_dir}{dossier de sauvegarde}
+\item{gain_semis_direct}{Numérique. Gain SOC semis direct. Par défaut 0.25.}
+
+\item{gain_compost}{Numérique. Gain SOC apport organique. Par défaut 0.4.}
 }
 \value{
-data.frame avec gains par scenario
+Data frame avec colonnes de gain par scénario et gain_total_tCha.
 }
 \description{
-Calcule les gains potentiels en SOC par scenario.
-}
-\examples{
-# seq_pot <- estimate_sequestration_potential(sol_stock)
+Compare trois scénarios agricoles et calcule le gain potentiel en carbone.
 }

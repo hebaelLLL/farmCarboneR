@@ -1,163 +1,405 @@
+#' G<c3><a9>n<c3><a9>rer un rapport HTML ou PDF complet
+#'
+#' Produit un rapport scientifique d<c3><a9>taill<c3><a9> avec stocks carbone,
+#' pratiques agricoles, cartes SOC, potentiel s<c3><a9>questration,
+#' importance variables RF et recommandations.
+#'
+#' @param data Data frame final avec toutes les variables.
+#' @param rf_result Liste optionnelle. R<c3><a9>sultat de train_rf_model().
+#' @param output_format Caract<c3><a8>re. "html" ou "pdf". Par d<c3><a9>faut "html".
+#' @param output_dir Caract<c3><a8>re. Dossier de sortie. Par d<c3><a9>faut "outputs".
+#' @param titre Caract<c3><a8>re. Titre du rapport.
+#'
+#' @return Chemin du rapport g<c3><a9>n<c3><a9>r<c3><a9>.
+#' @export
+generate_report <- function(data,
+                            rf_result     = NULL,
+                            output_format = "html",
+                            output_dir    = "outputs",
+                            titre         = "Rapport farmCarbonR") {
 
-generate_report <- function(sol_stock,
-                            farm_summary,
-                            seq_potential,
-                            recommendations,
-                            rf_result,
-                            soc_map,
-                            format     = "html",
-                            output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/outputs") {
+  # Packages requis
+  for (pkg in c("rmarkdown", "knitr", "ggplot2", "dplyr",
+                "tidyr", "gridExtra")) {
+    if (!requireNamespace(pkg, quietly = TRUE))
+      stop(paste("Package requis manquant :", pkg))
+  }
 
-  if (!requireNamespace("rmarkdown", quietly=TRUE)) stop("Package rmarkdown requis.")
+  dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
-  dir.create(output_dir, showWarnings=FALSE, recursive=TRUE)
+  # Sauvegarder les donn<c3><a9>es dans l'environnement temporaire
+  report_env <- new.env(parent = globalenv())
+  report_env$data      <- data
+  report_env$rf_result <- rf_result
 
-  rmd_path <- file.path(output_dir, "rapport_carbone.Rmd")
-
-  rmd_content <- paste0('---
-title: "Rapport Carbone Agricole -- farmCarbonR"
-date: "', format(Sys.Date(), "%d %B %Y"), '"
-output:
-  ', if(format=="pdf") "pdf_document" else "html_document", ':
-    toc: true
-    toc_depth: 3
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
-library(ggplot2); library(knitr); library(terra); library(sf); library(randomForest)
-```
-
-# 1. Resume Executif
-
-```{r}
-cat(sprintf("Nombre de parcelles analysees : %d\n",     nrow(farm_summary)))
-cat(sprintf("Stock SOC moyen               : %.2f tC/ha\n", mean(farm_summary$SOC_stock_tCha, na.rm=TRUE)))
-cat(sprintf("Gain sequestration moyen      : %.2f tC/ha\n", mean(farm_summary$max_gain_tCha,  na.rm=TRUE)))
-cat(sprintf("Parcelles urgentes (SOC<40)   : %d\n",     sum(farm_summary$SOC_stock_tCha < 40, na.rm=TRUE)))
-```
-
-# 2. Stocks de Carbone par Parcelle
-
-```{r}
-knitr::kable(
-  farm_summary[, c("parcelle_id","SOC_stock_tCha","SOC_categorie","max_gain_tCha","best_scenario")],
-  col.names = c("Parcelle","SOC (tC/ha)","Categorie","Gain max (tC/ha)","Meilleur scenario"),
-  digits  = 2,
-  caption = "Stocks SOC et potentiel de sequestration"
-)
-```
-
-# 3. Carte SOC Predite
-
-```{r fig.width=9, fig.height=7}
-soc_df <- as.data.frame(soc_map, xy=TRUE)
-names(soc_df)[3] <- "SOC"
-soc_df <- soc_df[!is.na(soc_df$SOC), ]
-
-pts <- as.data.frame(sf::st_coordinates(sol_stock))
-pts$parcelle_id <- sol_stock$parcelle_id
-
-ggplot() +
-  geom_raster(data=soc_df, aes(x=x, y=y, fill=SOC)) +
-  scale_fill_viridis_c(name="tC/ha", option="magma", direction=-1) +
-  geom_point(data=pts, aes(x=X, y=Y),
-             color="black", size=2, shape=21, fill="white", stroke=0.8) +
-  geom_text(data=pts, aes(x=X, y=Y, label=parcelle_id),
-            size=2.5, vjust=-0.8, color="black") +
-  labs(title="Stock SOC predit (tC/ha)", x="Longitude", y="Latitude") +
-  theme_minimal(base_size=12) +
-  theme(plot.title=element_text(hjust=0.5, face="bold"))
-```
-
-# 4. Importance des Variables
-
-```{r fig.width=7, fig.height=4}
-imp <- as.data.frame(randomForest::importance(rf_result$model))
-imp$Variable <- rownames(imp)
-
-ggplot(imp, aes(x=reorder(Variable, `%IncMSE`), y=`%IncMSE`, fill=`%IncMSE`)) +
-  geom_bar(stat="identity", width=0.6) +
-  scale_fill_gradient(low="#fdae61", high="#d7191c") +
-  coord_flip() +
-  labs(title="Importance des Variables -- Random Forest",
-       x="Variable", y="% Augmentation MSE") +
-  theme_minimal(base_size=12) +
-  theme(plot.title=element_text(hjust=0.5, face="bold"),
-        legend.position="none")
-```
-
-# 5. Potentiel de Sequestration
-
-```{r}
-cols_seq <- intersect(
-  c("parcelle_id","SOC_stock_tCha",
-    "gain_cover_crop_tCha","gain_no_tillage_tCha",
-    "gain_organic_fert_tCha","gain_all_combined_tCha","max_gain_tCha"),
-  names(seq_potential)
-)
-knitr::kable(
-  seq_potential[, cols_seq],
-  digits  = 2,
-  caption = "Gains potentiels par scenario (tC/ha)"
-)
-```
-
-# 6. Recommandations
-
-```{r}
-knitr::kable(
-  recommendations[, c("parcelle_id","SOC_stock_tCha","recommandations")],
-  col.names = c("Parcelle","SOC (tC/ha)","Recommandations"),
-  digits  = 2,
-  caption = "Recommandations par parcelle"
-)
-```
-
-# 7. Performance du Modele
-
-```{r}
-perf <- data.frame(
-  Metrique = c("RMSE Train","RMSE Test","R² Train","R² Test"),
-  Valeur   = round(c(rf_result$rmse_train, rf_result$rmse_test,
-                     rf_result$r2_train,   rf_result$r2_test), 4)
-)
-knitr::kable(perf, caption="Performance du modele Random Forest")
-```
-
-# 8. Variabilite Spatiale
-
-```{r}
-stats_soc <- data.frame(
-  Statistique = c("N","Moyenne (tC/ha)","Ecart-type","CV (%)","Min (tC/ha)","Max (tC/ha)","Mediane (tC/ha)"),
-  Valeur      = c(
-    nrow(farm_summary),
-    round(mean(farm_summary$SOC_stock_tCha, na.rm=TRUE), 2),
-    round(sd(farm_summary$SOC_stock_tCha,   na.rm=TRUE), 2),
-    round(sd(farm_summary$SOC_stock_tCha,   na.rm=TRUE) /
-          mean(farm_summary$SOC_stock_tCha, na.rm=TRUE) * 100, 1),
-    round(min(farm_summary$SOC_stock_tCha,    na.rm=TRUE), 2),
-    round(max(farm_summary$SOC_stock_tCha,    na.rm=TRUE), 2),
-    round(median(farm_summary$SOC_stock_tCha, na.rm=TRUE), 2)
+  # Contenu du rapport Rmd
+  rmd_lines <- c(
+    '---',
+    paste0('title: "', titre, '"'),
+    paste0('date: "`r format(Sys.Date(), \'%d %B %Y\')`"'),
+    'output:',
+    if (output_format == "pdf") '  pdf_document:' else '  html_document:',
+    '    toc: true',
+    '    toc_depth: 3',
+    if (output_format == "html") '    toc_float: true',
+    if (output_format == "html") '    theme: flatly',
+    if (output_format == "html") '    highlight: tango',
+    '    number_sections: true',
+    '    fig_caption: true',
+    '---',
+    '',
+    '```{r setup, include=FALSE}',
+    'knitr::opts_chunk$set(',
+    '  echo       = FALSE,',
+    '  warning    = FALSE,',
+    '  message    = FALSE,',
+    '  fig.width  = 9,',
+    '  fig.height = 5',
+    ')',
+    'library(ggplot2)',
+    'library(knitr)',
+    'library(dplyr)',
+    'library(tidyr)',
+    'library(gridExtra)',
+    '```',
+    '',
+    '---',
+    '',
+    '# R<c3><a9>sum<c3><a9> ex<c3><a9>cutif',
+    '',
+    '```{r resume}',
+    'n_parc   <- nrow(data)',
+    'soc_moy  <- round(mean(data$SOC_stock_tCha, na.rm = TRUE), 2)',
+    'soc_min  <- round(min(data$SOC_stock_tCha,  na.rm = TRUE), 2)',
+    'soc_max  <- round(max(data$SOC_stock_tCha,  na.rm = TRUE), 2)',
+    'n_faible <- sum(data$SOC_stock_tCha < 40, na.rm = TRUE)',
+    'gain_moy <- if ("gain_total_tCha" %in% names(data))',
+    '  round(mean(data$gain_total_tCha, na.rm = TRUE), 2) else NA',
+    'kable(data.frame(',
+    '  Indicateur = c(',
+    '    "Nombre de parcelles analysees",',
+    '    "Stock SOC moyen (tC/ha)",',
+    '    "Stock SOC minimum (tC/ha)",',
+    '    "Stock SOC maximum (tC/ha)",',
+    '    "Parcelles a SOC faible (< 40 tC/ha)",',
+    '    "Gain de sequestration moyen (tC/ha)"',
+    '  ),',
+    '  Valeur = c(n_parc, soc_moy, soc_min, soc_max, n_faible, gain_moy)',
+    '), caption = "Tableau 1 <e2><80><94> Indicateurs cles du rapport")',
+    '```',
+    '',
+    '---',
+    '',
+    '# Donn<c3><a9>es sol (SoilGrids ISRIC)',
+    '',
+    '## Stocks de carbone par parcelle',
+    '',
+    '```{r tableau_soc}',
+    'cols_soc <- intersect(',
+    '  c("parcelle_id","SOC","bulk_density","depth",',
+    '    "rock_fragment","SOC_stock_tCha","SOC_potentiel_tCha"),',
+    '  names(data)',
+    ')',
+    'kable(data[, cols_soc], digits = 2,',
+    '  caption = "Tableau 2 <e2><80><94> Donnees sol et stocks SOC (tC/ha)")',
+    '```',
+    '',
+    '## Distribution du stock SOC',
+    '',
+    '```{r hist_soc}',
+    'ggplot(data, aes(x = SOC_stock_tCha)) +',
+    '  geom_histogram(bins = 10, fill = "#1a9850",',
+    '                 color = "white", alpha = 0.8) +',
+    '  geom_vline(aes(xintercept = mean(SOC_stock_tCha, na.rm = TRUE)),',
+    '             color = "#d73027", linetype = "dashed", size = 1) +',
+    '  annotate("text",',
+    '    x = mean(data$SOC_stock_tCha, na.rm = TRUE) * 1.05,',
+    '    y = Inf, vjust = 2,',
+    '    label = paste0("Moyenne : ",',
+    '      round(mean(data$SOC_stock_tCha, na.rm = TRUE), 1), " tC/ha"),',
+    '    color = "#d73027", size = 4) +',
+    '  labs(title = "Distribution du stock de carbone organique",',
+    '       x = "SOC stock (tC/ha)", y = "Nombre de parcelles") +',
+    '  theme_minimal(base_size = 13)',
+    '```',
+    '',
+    '## Texture du sol',
+    '',
+    '```{r texture}',
+    'if (all(c("clay","sand","silt") %in% names(data))) {',
+    '  texture_long <- tidyr::pivot_longer(',
+    '    data[, c("parcelle_id","clay","sand","silt")],',
+    '    cols = c(clay, sand, silt),',
+    '    names_to = "fraction", values_to = "pct"',
+    '  )',
+    '  ggplot(texture_long,',
+    '         aes(x = parcelle_id, y = pct, fill = fraction)) +',
+    '    geom_col(position = "stack") +',
+    '    scale_fill_manual(',
+    '      values = c(clay="#a6611a", sand="#dfc27d", silt="#80cdc1"),',
+    '      labels = c("Argile","Sable","Limon")) +',
+    '    labs(title = "Composition texturale des sols",',
+    '         x = "Parcelle", y = "Fraction (%)", fill = "Fraction") +',
+    '    theme_minimal(base_size = 12) +',
+    '    theme(axis.text.x = element_text(angle = 45, hjust = 1))',
+    '}',
+    '```',
+    '',
+    '---',
+    '',
+    '# Pratiques agricoles',
+    '',
+    '## Tableau des pratiques',
+    '',
+    '```{r tableau_pratiques}',
+    'cols_p <- intersect(',
+    '  c("parcelle_id","travail_sol","couvert_vegetal",',
+    '    "irrigation","fertilisation_organique","rotation"),',
+    '  names(data)',
+    ')',
+    'kable(data[, cols_p],',
+    '  caption = "Tableau 3 <e2><80><94> Pratiques agricoles par parcelle")',
+    '```',
+    '',
+    '## R<c3><a9>partition des pratiques',
+    '',
+    '```{r graph_pratiques, fig.height=5}',
+    'plots_list <- list()',
+    'if ("travail_sol" %in% names(data)) {',
+    '  plots_list[[1]] <- ggplot(data,',
+    '    aes(x = travail_sol, fill = travail_sol)) +',
+    '    geom_bar() +',
+    '    scale_fill_brewer(palette = "Set2") +',
+    '    labs(title = "Travail du sol", x = "", y = "N") +',
+    '    theme_minimal() + theme(legend.position = "none")',
+    '}',
+    'if ("couvert_vegetal" %in% names(data)) {',
+    '  plots_list[[2]] <- ggplot(data,',
+    '    aes(x = couvert_vegetal, fill = couvert_vegetal)) +',
+    '    geom_bar() +',
+    '    scale_fill_brewer(palette = "Set1") +',
+    '    labs(title = "Couvert vegetal", x = "", y = "") +',
+    '    theme_minimal() + theme(legend.position = "none")',
+    '}',
+    'if ("fertilisation_organique" %in% names(data)) {',
+    '  plots_list[[3]] <- ggplot(data,',
+    '    aes(x = fertilisation_organique,',
+    '        fill = fertilisation_organique)) +',
+    '    geom_bar() +',
+    '    scale_fill_brewer(palette = "Paired") +',
+    '    labs(title = "Fertilisation organique", x = "", y = "") +',
+    '    theme_minimal() +',
+    '    theme(legend.position = "none",',
+    '          axis.text.x = element_text(angle = 30, hjust = 1))',
+    '}',
+    'if (length(plots_list) > 0)',
+    '  gridExtra::grid.arrange(grobs = plots_list, ncol = 3)',
+    '```',
+    '',
+    '## SOC selon les pratiques',
+    '',
+    '```{r soc_pratiques}',
+    'if ("travail_sol" %in% names(data)) {',
+    '  ggplot(data, aes(x = travail_sol, y = SOC_stock_tCha,',
+    '                   fill = travail_sol)) +',
+    '    geom_boxplot(alpha = 0.7) +',
+    '    geom_jitter(width = 0.1, alpha = 0.5) +',
+    '    scale_fill_brewer(palette = "Set2") +',
+    '    labs(title = "Stock SOC selon le travail du sol",',
+    '         x = "Travail du sol", y = "SOC stock (tC/ha)") +',
+    '    theme_minimal(base_size = 13) +',
+    '    theme(legend.position = "none")',
+    '}',
+    '```',
+    '',
+    '---',
+    '',
+    '# Carte du stock SOC actuel',
+    '',
+    '```{r carte_soc}',
+    'ggplot(data, aes(x = lon, y = lat,',
+    '                 color = SOC_stock_tCha,',
+    '                 size  = SOC_stock_tCha)) +',
+    '  geom_point(alpha = 0.85) +',
+    '  scale_color_gradientn(',
+    '    colors = c("#d73027","#fee08b","#1a9850"),',
+    '    name   = "SOC (tC/ha)") +',
+    '  scale_size_continuous(range = c(3, 10), guide = "none") +',
+    '  geom_text(aes(label = parcelle_id),',
+    '            size = 2.5, vjust = -1.2, color = "black") +',
+    '  labs(',
+    '    title    = "Carte du stock de carbone organique actuel",',
+    '    subtitle = "Source : SoilGrids ISRIC v2.0",',
+    '    x = "Longitude", y = "Latitude") +',
+    '  theme_minimal(base_size = 13) +',
+    '  theme(plot.title = element_text(face = "bold", hjust = 0.5))',
+    '```',
+    '',
+    '---',
+    '',
+    '# Potentiel de s<c3><a9>questration',
+    '',
+    '## Carte du potentiel',
+    '',
+    '```{r carte_seq}',
+    'if ("gain_total_tCha" %in% names(data)) {',
+    '  ggplot(data, aes(x = lon, y = lat,',
+    '                   color = gain_total_tCha,',
+    '                   size  = gain_total_tCha)) +',
+    '    geom_point(alpha = 0.85) +',
+    '    scale_color_gradientn(',
+    '      colors = c("#f7f7f7","#74add1","#313695"),',
+    '      name   = "Gain (tC/ha)") +',
+    '    scale_size_continuous(range = c(3,10), guide = "none") +',
+    '    geom_text(aes(label = parcelle_id),',
+    '              size = 2.5, vjust = -1.2, color = "black") +',
+    '    labs(',
+    '      title    = "Carte du potentiel de sequestration",',
+    '      subtitle = "Gain potentiel par adoption de meilleures pratiques",',
+    '      x = "Longitude", y = "Latitude") +',
+    '    theme_minimal(base_size = 13) +',
+    '    theme(plot.title = element_text(face = "bold", hjust = 0.5))',
+    '}',
+    '```',
+    '',
+    '## Comparaison des sc<c3><a9>narios',
+    '',
+    '```{r scenarios}',
+    'if (all(c("gain_couvert_tCha","gain_semis_direct_tCha",',
+    '          "gain_pratiques_tCha") %in% names(data))) {',
+    '  sc_long <- tidyr::pivot_longer(',
+    '    data[, c("parcelle_id","gain_couvert_tCha",',
+    '             "gain_semis_direct_tCha","gain_pratiques_tCha")],',
+    '    cols = -parcelle_id,',
+    '    names_to = "scenario", values_to = "gain"',
+    '  )',
+    '  sc_long$scenario <- dplyr::recode(sc_long$scenario,',
+    '    "gain_couvert_tCha"      = "Couvert vegetal",',
+    '    "gain_semis_direct_tCha" = "Semis direct",',
+    '    "gain_pratiques_tCha"    = "Apport organique"',
+    '  )',
+    '  ggplot(sc_long, aes(x = scenario, y = gain, fill = scenario)) +',
+    '    geom_boxplot(alpha = 0.7) +',
+    '    geom_jitter(width = 0.1, alpha = 0.4) +',
+    '    scale_fill_brewer(palette = "Set2") +',
+    '    labs(title = "Gain potentiel par scenario agricole",',
+    '         x = "Scenario", y = "Gain SOC (tC/ha)") +',
+    '    theme_minimal(base_size = 13) +',
+    '    theme(legend.position = "none")',
+    '}',
+    '```',
+    '',
+    '## Tableau des gains',
+    '',
+    '```{r tableau_gains}',
+    'if ("gain_total_tCha" %in% names(data)) {',
+    '  cols_gain <- intersect(',
+    '    c("parcelle_id","SOC_stock_tCha","gain_couvert_tCha",',
+    '      "gain_semis_direct_tCha","gain_pratiques_tCha",',
+    '      "gain_total_tCha","SOC_potentiel_tCha"),',
+    '    names(data)',
+    '  )',
+    '  kable(data[, cols_gain], digits = 2,',
+    '    caption = "Tableau 4 <e2><80><94> Gains potentiels par scenario (tC/ha)")',
+    '}',
+    '```',
+    '',
+    '---',
+    '',
+    '# Mod<c3><a8>le Random Forest',
+    '',
+    '## M<c3><a9>triques de performance',
+    '',
+    '```{r rf_metrics}',
+    'if (!is.null(rf_result)) {',
+    '  metriques <- data.frame(',
+    '    Metrique = c("OOB RMSE","RMSE Train","RMSE Test",',
+    '                 "R2 Train","R2 Test",',
+    '                 "Nombre arbres","Variables utilisees"),',
+    '    Valeur = c(',
+    '      round(rf_result$oob_error,  4),',
+    '      round(rf_result$rmse_train, 4),',
+    '      ifelse(is.na(rf_result$rmse_test), "N/A",',
+    '             round(rf_result$rmse_test, 4)),',
+    '      round(rf_result$r2_train, 4),',
+    '      ifelse(is.na(rf_result$r2_test), "N/A",',
+    '             round(rf_result$r2_test, 4)),',
+    '      rf_result$model$ntree,',
+    '      length(rf_result$predicteurs)',
+    '    )',
+    '  )',
+    '  kable(metriques,',
+    '    caption = "Tableau 5 <e2><80><94> Performance du modele Random Forest")',
+    '}',
+    '```',
+    '',
+    '## Importance des variables',
+    '',
+    '```{r importance_rf, fig.height=6}',
+    'if (!is.null(rf_result)) {',
+    '  imp     <- rf_result$importance',
+    '  imp_top <- head(imp[order(imp[,"%IncMSE"],',
+    '                            decreasing = TRUE), ], 10)',
+    '  ggplot(imp_top,',
+    '    aes(x = reorder(variable, `%IncMSE`),',
+    '        y = `%IncMSE`, fill = `%IncMSE`)) +',
+    '    geom_col(alpha = 0.85) +',
+    '    coord_flip() +',
+    '    scale_fill_gradientn(',
+    '      colors = c("#fee08b","#fc8d59","#d73027")) +',
+    '    labs(',
+    '      title    = "Importance des variables <e2><80><94> Random Forest",',
+    '      subtitle = "% augmentation erreur quadratique moyenne (MSE)",',
+    '      x = "Variable", y = "% IncMSE") +',
+    '    theme_minimal(base_size = 13) +',
+    '    theme(',
+    '      plot.title      = element_text(face = "bold", hjust = 0.5),',
+    '      legend.position = "none")',
+    '}',
+    '```',
+    '',
+    '---',
+    '',
+    '# Recommandations de gestion',
+    '',
+    '```{r recommandations}',
+    'if ("recommandation" %in% names(data)) {',
+    '  kable(',
+    '    data[, c("parcelle_id","SOC_stock_tCha","recommandation")],',
+    '    col.names = c("Parcelle","SOC (tC/ha)","Recommandations"),',
+    '    digits    = 2,',
+    '    caption   = "Tableau 6 <e2><80><94> Recommandations par parcelle"',
+    '  )',
+    '}',
+    '```',
+    '',
+    '---',
+    '',
+    '# Sources des donn<c3><a9>es',
+    '',
+    '| Donn<c3><a9>e | Package R | Source officielle |',
+    '|--------|-----------|-------------------|',
+    '| SOC, texture, densit<c3><a9> | `httr` | SoilGrids v2.0 <e2><80><94> ISRIC |',
+    '| NDVI | `MODISTools` | MODIS MOD13A3 <e2><80><94> NASA |',
+    '| Temp<c3><a9>rature, pr<c3><a9>cipitations | `geodata` | WorldClim v2 |',
+    '| Altitude | `geodata` | SRTM <e2><80><94> NASA |',
+    '| Pratiques agricoles | <e2><80><94> | Donn<c3><a9>es terrain CSV/Excel |',
+    '',
+    '---',
+    '',
+    '*Rapport g<c3><a9>n<c3><a9>r<c3><a9> automatiquement par le package farmCarbonR*'
   )
-)
-knitr::kable(stats_soc, caption="Statistiques descriptives SOC")
-```
-')
 
-writeLines(rmd_content, rmd_path)
-cat("Template Rmd cree\n")
+  rmd_path <- file.path(output_dir, "rapport_farmCarbonR.Rmd")
+  writeLines(rmd_lines, rmd_path)
 
-out_file <- paste0("rapport_carbone.", if(format=="pdf") "pdf" else "html")
+  out_file <- rmarkdown::render(
+    input      = rmd_path,
+    output_dir = output_dir,
+    quiet      = TRUE,
+    envir      = report_env
+  )
 
-rmarkdown::render(
-  input       = rmd_path,
-  output_file = out_file,
-  output_dir  = output_dir,
-  envir       = environment()
-)
-
-cat(sprintf("\nRapport genere : %s\n", file.path(output_dir, out_file)))
-return(file.path(output_dir, out_file))
+  message(sprintf("Rapport genere : %s", out_file))
+  return(out_file)
 }
-

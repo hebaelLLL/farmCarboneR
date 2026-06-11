@@ -2,30 +2,21 @@
 % Please edit documentation in R/predict_soc_map.R
 \name{predict_soc_map}
 \alias{predict_soc_map}
-\title{Predire la carte SOC spatiale}
+\title{Prédire la carte spatiale du stock SOC}
 \usage{
-predict_soc_map(
-  rf_result,
-  env_stack,
-  scale_params = NULL,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
-)
+predict_soc_map(rf_result, raster_stack, output_path = "outputs/soc_map.tif")
 }
 \arguments{
-\item{rf_result}{liste retournee par train_rf_model()}
+\item{rf_result}{Liste. Résultat de train_rf_model().}
 
-\item{env_stack}{SpatRaster des covariables environnementales}
+\item{raster_stack}{SpatRaster. Stack de covariables environnementales.}
 
-\item{scale_params}{parametres de normalisation (optionnel)}
-
-\item{output_dir}{dossier de sauvegarde}
+\item{output_path}{Caractère. Chemin export GeoTIFF.}
 }
 \value{
-SpatRaster avec stock SOC predit en tC/ha
+SpatRaster de la carte SOC predite.
 }
 \description{
-Applique le modele RF sur un raster de covariables.
-}
-\examples{
-# soc_map <- predict_soc_map(rf_result, env_stack)
+Applique le modèle Random Forest sur un raster stack pour produire
+une carte SOC et l'exporter en GeoTIFF.
 }

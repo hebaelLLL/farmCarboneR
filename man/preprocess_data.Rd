@@ -2,25 +2,40 @@
 % Please edit documentation in R/preprocess_data.R
 \name{preprocess_data}
 \alias{preprocess_data}
-\title{Preprocesser les donnees sol}
+\title{Pretraitement des donnees pour la modelisation}
 \usage{
-preprocess_data(data, target = "SOC_stock_tCha", test_size = 0.2, scale = TRUE)
+preprocess_data(
+  data,
+  target = "SOC_stock",
+  cor_threshold = 0.85,
+  vif_threshold = 10,
+  train_ratio = 0.8,
+  seed = 42
+)
 }
 \arguments{
-\item{data}{sf object avec SOC_stock_tCha et covariables}
+\item{data}{data.frame issu de extract_covariates()}
 
-\item{target}{colonne cible (defaut: "SOC_stock_tCha")}
+\item{target}{Nom de la colonne cible (defaut: "SOC_stock")}
 
-\item{test_size}{proportion jeu de test (defaut: 0.2)}
+\item{cor_threshold}{Seuil correlation Pearson (defaut: 0.85)}
 
-\item{scale}{normaliser les variables numeriques (defaut: TRUE)}
+\item{vif_threshold}{Seuil VIF (defaut: 10)}
+
+\item{train_ratio}{Proportion jeu entrainement (defaut: 0.8)}
+
+\item{seed}{Graine aleatoire (defaut: 42)}
 }
 \value{
-liste avec train, test, full, target, features, scale_params
+Liste avec train, test, features_kept, removed_vars
 }
 \description{
-Normalise et divise les donnees en train/test.
+Normalise les variables numeriques, supprime les variables trop correlees
+(Pearson > seuil), calcule le VIF et divise en jeux train/test.
 }
 \examples{
-# result <- preprocess_data(sol_stock)
+\dontrun{
+data(sample_soil_data)
+processed <- preprocess_data(sample_soil_data, target = "SOC_mean")
+}
 }

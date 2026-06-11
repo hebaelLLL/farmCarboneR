@@ -2,27 +2,24 @@
 % Please edit documentation in R/plot_feature_importance.R
 \name{plot_feature_importance}
 \alias{plot_feature_importance}
-\title{Visualiser l importance des variables}
+\title{Visualiser l'importance des variables}
 \usage{
 plot_feature_importance(
   rf_result,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/outputs",
+  output_dir = "outputs",
   filename = "feature_importance.png"
 )
 }
 \arguments{
-\item{rf_result}{liste retournee par train_rf_model()}
+\item{rf_result}{Liste retournee par train_rf_model().}
 
-\item{output_dir}{dossier de sauvegarde}
+\item{output_dir}{Dossier de sauvegarde. Par defaut "outputs".}
 
-\item{filename}{nom du fichier PNG}
+\item{filename}{Nom du fichier PNG. Par defaut "feature_importance.png".}
 }
 \value{
-objet ggplot2
+Objet ggplot2.
 }
 \description{
-Graphique en barres de l importance des variables RF.
-}
-\examples{
-# p <- plot_feature_importance(rf_result)
+Graphique en barres de l'importance des variables RF.
 }

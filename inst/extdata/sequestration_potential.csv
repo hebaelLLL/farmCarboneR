@@ -1,6 +1,0 @@
-"parcelle_id","SOC_stock_tCha","gain_cover_crop_tCha","stock_cover_crop_tCha","gain_no_tillage_tCha","stock_no_tillage_tCha","gain_organic_fert_tCha","stock_organic_fert_tCha","gain_all_combined_tCha","stock_all_combined_tCha","best_scenario","max_gain_tCha"
-"P001",74.92,11.24,86.16,7.49,82.41,14.98,89.9,29.97,104.89,"all_combined",29.97
-"P002",85.63,12.84,98.47,8.56,94.19,17.13,102.76,34.25,119.88,"all_combined",34.25
-"P003",63.34,9.5,72.84,6.33,69.67,12.67,76.01,25.34,88.68,"all_combined",25.34
-"P004",85.8,12.87,98.67,8.58,94.38,17.16,102.96,34.32,120.12,"all_combined",34.32
-"P005",77.43,11.61,89.04,7.74,85.17,15.49,92.92,30.97,108.4,"all_combined",30.97

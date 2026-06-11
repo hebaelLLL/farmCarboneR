@@ -4,28 +4,15 @@
 \alias{summarize_farms}
 \title{Resumer les donnees des parcelles agricoles}
 \usage{
-summarize_farms(
-  sol_stock,
-  seq_potential,
-  pratiques = NULL,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
-)
+summarize_farms(data)
 }
 \arguments{
-\item{sol_stock}{sf object avec colonnes SOC}
-
-\item{seq_potential}{data.frame retourne par estimate_sequestration_potential()}
-
-\item{pratiques}{data.frame de pratiques agricoles (optionnel)}
-
-\item{output_dir}{dossier de sauvegarde}
+\item{data}{Data frame avec SOC_stock_tCha et colonnes de pratiques.}
 }
 \value{
-data.frame resume par parcelle
+Liste : stats et detail.
 }
 \description{
-Produit un tableau de bord par parcelle.
-}
-\examples{
-# farm_summary <- summarize_farms(sol_stock, seq_potential)
+Produit un tableau de bord par parcelle avec SOC,
+  potentiel de sequestration et pratiques agricoles.
 }

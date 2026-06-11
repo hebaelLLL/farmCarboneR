@@ -2,33 +2,18 @@
 % Please edit documentation in R/plot_soc_map.R
 \name{plot_soc_map}
 \alias{plot_soc_map}
-\title{Visualiser la carte SOC}
+\title{Cartographier le stock de carbone du sol}
 \usage{
-plot_soc_map(
-  soc_map,
-  sol_stock = NULL,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/outputs",
-  filename = "soc_map.png",
-  title = "Stock de Carbone Organique (tC/ha)"
-)
+plot_soc_map(data, output_path = NULL)
 }
 \arguments{
-\item{soc_map}{SpatRaster retourne par predict_soc_map()}
+\item{data}{Data frame avec SOC_stock_tCha, lon, lat.}
 
-\item{sol_stock}{sf object des parcelles (optionnel)}
-
-\item{output_dir}{dossier de sauvegarde}
-
-\item{filename}{nom du fichier PNG}
-
-\item{title}{titre de la carte}
+\item{output_path}{Caractère. Chemin export PNG/PDF. NULL = affichage seul.}
 }
 \value{
-objet ggplot2
+Liste de graphiques ggplot2.
 }
 \description{
-Produit une carte ggplot2 du stock SOC predit.
-}
-\examples{
-# p <- plot_soc_map(soc_map, sol_stock)
+Produit trois cartes : SOC actuel, potentiel séquestration, scénarios agricoles.
 }

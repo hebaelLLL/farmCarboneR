@@ -2,27 +2,18 @@
 % Please edit documentation in R/generate_recommendations.R
 \name{generate_recommendations}
 \alias{generate_recommendations}
-\title{Generer des recommandations agronomiques}
+\title{Générer des recommandations automatiques}
 \usage{
-generate_recommendations(
-  farm_summary,
-  seq_potential,
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/outputs"
-)
+generate_recommendations(data, seuil_faible = 40)
 }
 \arguments{
-\item{farm_summary}{data.frame retourne par summarize_farms()}
+\item{data}{Data frame avec SOC_stock_tCha et pratiques agricoles.}
 
-\item{seq_potential}{data.frame retourne par estimate_sequestration_potential()}
-
-\item{output_dir}{dossier de sauvegarde}
+\item{seuil_faible}{Numérique. Seuil SOC faible (tC/ha). Par défaut 40.}
 }
 \value{
-data.frame avec recommandations par parcelle
+Data frame avec recommandations par parcelle.
 }
 \description{
-Produit des recommandations par parcelle selon le stock SOC.
-}
-\examples{
-# reco <- generate_recommendations(farm_summary, seq_potential)
+Génère des recommandations de gestion selon le stock SOC et les pratiques.
 }

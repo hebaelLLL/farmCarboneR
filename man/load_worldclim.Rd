@@ -4,23 +4,17 @@
 \alias{load_worldclim}
 \title{Charger donnees climatiques WorldClim}
 \usage{
-load_worldclim(
-  country = "MA",
-  output_dir = "C:/Users/PC Paradise/Desktop/farmCarbonR/data"
-)
+load_worldclim(country = "MA", output_dir = "data")
 }
 \arguments{
-\item{country}{code pays ISO 3166-1 alpha-2 (defaut: "MA" pour Maroc)}
+\item{country}{Code pays ISO 3166-1 alpha-2. Par defaut "MA".}
 
-\item{output_dir}{dossier de sauvegarde}
+\item{output_dir}{Dossier de sauvegarde. Par defaut "data".}
 }
 \value{
-SpatRaster avec couches temp_mean_C et prec_annual_mm
+SpatRaster avec couches temp_mean_C et prec_annual_mm.
 }
 \description{
 Telecharge temperature moyenne et precipitations annuelles
   depuis WorldClim v2 pour un pays donne.
-}
-\examples{
-# wc <- load_worldclim(country="MA")
 }

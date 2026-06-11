@@ -2,30 +2,30 @@
 % Please edit documentation in R/import_soil_data.R
 \name{import_soil_data}
 \alias{import_soil_data}
-\title{Importer les donnees sol}
+\title{Importer les données de sol}
 \usage{
 import_soil_data(
   source = "csv",
-  file = NULL,
-  coords_col = c("lon", "lat"),
+  path = NULL,
+  coords = NULL,
+  depth = "0-30cm",
   crs = 4326
 )
 }
 \arguments{
-\item{source}{type de source : "csv" ou "soilgrids"}
+\item{source}{Caractère. "soilgrids" ou "csv".}
 
-\item{file}{chemin vers le fichier CSV (si source="csv")}
+\item{path}{Caractère. Chemin CSV si source = "csv".}
 
-\item{coords_col}{noms des colonnes de coordonnees (defaut: c("lon","lat"))}
+\item{coords}{Data frame avec colonnes parcelle_id, lon, lat.}
 
-\item{crs}{systeme de coordonnees (defaut: 4326)}
+\item{depth}{Caractère. Profondeur SoilGrids. Par défaut "0-30cm".}
+
+\item{crs}{Entier. CRS. Par défaut 4326.}
 }
 \value{
-sf object avec les donnees sol
+Liste : sf_object et dataframe.
 }
 \description{
-Importe les donnees de sol depuis un fichier CSV ou SoilGrids ISRIC.
-}
-\examples{
-# sol <- import_soil_data(source="csv", file="data/soil.csv")
+Importe SOC, texture et densité depuis SoilGrids (ISRIC) ou un fichier CSV.
 }
