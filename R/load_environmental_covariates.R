@@ -7,6 +7,8 @@
 #' @param start_date Caractère. Date début MODIS. Par défaut "2023-01-01".
 #' @param end_date Caractère. Date fin MODIS. Par défaut "2023-12-31".
 #' @param path_temp Caractère. Dossier temporaire pour téléchargements.
+#' @param country Caractère. Code pays ISO 3166-1 alpha-2/alpha-3. Par défaut "MA".
+#' @param ndvi_fallback Numérique. Valeur de repli NDVI si MODIS indisponible. Par défaut 0.35.
 #'
 #' @return Data frame avec colonnes ndvi, temp, precip, alt par parcelle.
 #' @export
@@ -14,7 +16,7 @@ load_environmental_covariates <- function(coords,
                                           start_date = "2023-01-01",
                                           end_date   = "2023-12-31",
                                           path_temp  = tempdir(),
-                                          country      = "MA",      # <-- NOUVEAU
+                                          country       = "MA",
                                           ndvi_fallback = NULL) {
 
   if (!all(c("lon", "lat") %in% names(coords)))
@@ -22,17 +24,19 @@ load_environmental_covariates <- function(coords,
 
   # --- Température et Précipitations : WorldClim via geodata ---
   message("Telechargement WorldClim (temperature + precipitations)...")
-  temp_rast  <- geodata::worldclim_country("MA", var = "tavg", path = path_temp)
-  precip_rast <- geodata::worldclim_country("MA", var = "prec", path = path_temp)
-  alt_rast   <- geodata::elevation_3s("MA", path = path_temp)
+  temp_rast   <- geodata::worldclim_country(country, var = "tavg", path = path_temp)
+  precip_rast <- geodata::worldclim_country(country, var = "prec", path = path_temp)
+  alt_rast    <- geodata::elevation_3s(country, path = path_temp)
 
   pts <- terra::vect(coords, geom = c("lon", "lat"), crs = "EPSG:4326")
 
-  temp_vals  <- terra::extract(terra::mean(temp_rast),  pts)[, 2]
+  temp_vals   <- terra::extract(terra::mean(temp_rast),  pts)[, 2]
   precip_vals <- terra::extract(terra::mean(precip_rast), pts)[, 2]
-  alt_vals   <- terra::extract(alt_rast, pts)[, 2]
+  alt_vals    <- terra::extract(alt_rast, pts)[, 2]
 
   message("WorldClim et SRTM charges.")
+
+  fallback_val <- if (!is.null(ndvi_fallback)) ndvi_fallback else 0.35
 
   # --- NDVI : MODIS via MODISTools ---
   message("Telechargement NDVI MODIS...")
@@ -54,8 +58,8 @@ load_environmental_covariates <- function(coords,
       mean(ndvi_raw$value * 0.0001, na.rm = TRUE)
     })
   }, error = function(e) {
-    message("MODIS indisponible, NDVI estime depuis NDVI moyen Maroc : ", e$message)
-    rep(0.35, nrow(coords))
+    message("MODIS indisponible, NDVI estime depuis valeur de repli : ", e$message)
+    rep(fallback_val, nrow(coords))
   })
 
   message("NDVI charge.")

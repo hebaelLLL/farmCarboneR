@@ -611,23 +611,6 @@ testthat::test_dir("tests/testthat")
 
 ---
 
-## Historique des modifications
-
-| Commit | Description |
-|--------|-------------|
-| `0699944` | Mise à jour README |
-| `3e6d2eb` | Remplacement données simulées par données réelles (SoilGrids, WorldClim, SRTM, NDVI) |
-| `7540478` | Mise à jour métriques de performance du modèle RF |
-| `d8b75a6` | Ajout lien rapport HTML dans README |
-| `edcdc98` | Correction URLs images vers liens GitHub raw |
-| `2b2f948` | Ajout images de prévisualisation dans README |
-| `9eb496b` | Sauvegarde avant migration LFS |
-| `dfedb3a` | Migration grands rasters vers Git LFS |
-| `b429fd6` | Suivi fichiers `.tif` avec Git LFS |
-| `0337624` | **Commit initial** : farmCarbonR v1.0.0 |
-
----
-
 ## Limitations connues
 
 - **Périmètre géographique** : Calibré exclusivement pour le **Maroc**. Les valeurs de repli et seuils sont spécifiques au contexte agricole marocain semi-aride.

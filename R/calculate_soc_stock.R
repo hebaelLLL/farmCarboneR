@@ -1,6 +1,6 @@
 #' Calculer le stock de carbone organique du sol
 #'
-#' @param sol_data Data frame ou sf avec SOC_mean et BD_mean.
+#' @param sol_data Data frame ou sf avec SOC_mean, BD_mean et optionnellement rock_fragment.
 #' @param depth Profondeur en cm. Par defaut 30.
 #' @param output_dir Dossier de sortie. Par defaut "data".
 #' @return sol_data avec colonne SOC_stock_tCha ajoutee.
@@ -16,8 +16,17 @@ calculate_soc_stock <- function(sol_data,
 
   dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
+  rock <- if ("rock_fragment" %in% names(sol_data)) {
+    sol_data$rock_fragment
+  } else {
+    0
+  }
+
+  # SOC_mean (g/kg) -> SOC (%) : / 10
+  # SOC_stock_tCha = SOC(%) * BD(g/cm3) * depth(cm) * (1 - rock_fragment(%)/100) * 10
   sol_data$SOC_stock_tCha <- round(
-    sol_data$SOC_mean * sol_data$BD_mean * depth / 10, 2
+    (sol_data$SOC_mean / 10) * sol_data$BD_mean * depth * (1 - rock / 100) * 10,
+    2
   )
 
   message(sprintf("SOC stock moyen : %.2f tC/ha",

@@ -1,79 +1,165 @@
-#' Exporter tous les outputs du pipeline farmCarbonR
+#' Sauvegarder tous les outputs du pipeline farmCarbonR
 #'
-#' @param soil_data dataframe sol
-#' @param practices_data dataframe pratiques agricoles
-#' @param model modèle RF (optionnel)
-#' @param soc_map raster SOC (optionnel)
-#' @param sequestration_map raster potentiel (optionnel)
-#' @param path dossier de sortie
+#' Génère le dataset final (CSV + RDS), un résumé texte, le modèle RF
+#' (si fourni), les cartes raster SOC et séquestration (si fournies),
+#' une série de graphiques exploratoires PNG, et un rapport HTML synthétique.
 #'
-#' @return liste des fichiers générés
+#' @param soil_data Data frame. Données sol avec colonne parcelle_id.
+#' @param practices_data Data frame. Pratiques agricoles avec colonne parcelle_id.
+#' @param model Liste optionnelle. Résultat de train_rf_model(). Par défaut NULL.
+#' @param soc_map SpatRaster optionnel. Carte SOC prédite. Par défaut NULL.
+#' @param sequestration_map SpatRaster optionnel. Carte de potentiel de séquestration. Par défaut NULL.
+#' @param path Caractère. Dossier de sortie. Par défaut "outputs".
+#'
+#' @return Liste : dataset (data frame fusionné) et path (dossier de sortie).
 #' @export
-save_outputs <- function(soil_data,
-                         practices_data,
-                         model = NULL,
-                         soc_map = NULL,
-                         sequestration_map = NULL,
-                         path = "outputs") {
+save_outputs <- function(
+    soil_data,
+    practices_data,
+    model = NULL,
+    soc_map = NULL,
+    sequestration_map = NULL,
+    path = "outputs"
+) {
 
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
-  # ---------------------------
-  # 1. Export CSV
-  # ---------------------------
-  write.csv(soil_data,
-            file = file.path(path, "soil_data.csv"),
+  # =========================
+  # 1. DATASET FINAL
+  # =========================
+  df <- merge(soil_data, practices_data, by = "parcelle_id")
+
+  write.csv(df,
+            file.path(path, "final_dataset.csv"),
             row.names = FALSE)
 
-  write.csv(practices_data,
-            file = file.path(path, "farm_practices.csv"),
-            row.names = FALSE)
+  saveRDS(df,
+          file.path(path, "final_dataset.rds"))
 
-  # ---------------------------
-  # 2. Export RDS (objets R complets)
-  # ---------------------------
-  saveRDS(soil_data, file.path(path, "soil_data.rds"))
-  saveRDS(practices_data, file.path(path, "farm_practices.rds"))
+  # =========================
+  # 2. RESUME TEXTE
+  # =========================
+  writeLines(
+    c(
+      "===== FARM CARBON R OUTPUTS =====",
+      paste("Date :", Sys.time()),
+      paste("Rows :", nrow(df)),
+      paste("Columns :", ncol(df)),
+      paste("Missing values :", sum(is.na(df)))
+    ),
+    file.path(path, "summary.txt")
+  )
 
+  # =========================
+  # 3. MODELE MACHINE LEARNING
+  # =========================
   if (!is.null(model)) {
-    saveRDS(model, file.path(path, "rf_model.rds"))
+    saveRDS(model,
+            file.path(path, "rf_model.rds"))
   }
 
-  # ---------------------------
-  # 3. Raster exports
-  # ---------------------------
+  # =========================
+  # 4. CARTES (RASTERS)
+  # =========================
   if (!is.null(soc_map)) {
-    terra::writeRaster(soc_map,
-                       file.path(path, "soc_map.tif"),
-                       overwrite = TRUE)
+    terra::writeRaster(
+      soc_map,
+      file.path(path, "soc_map.tif"),
+      overwrite = TRUE
+    )
   }
 
   if (!is.null(sequestration_map)) {
-    terra::writeRaster(sequestration_map,
-                       file.path(path, "sequestration_map.tif"),
-                       overwrite = TRUE)
+    terra::writeRaster(
+      sequestration_map,
+      file.path(path, "sequestration_map.tif"),
+      overwrite = TRUE
+    )
   }
 
-  # ---------------------------
-  # 4. Résumé automatique
-  # ---------------------------
-  summary_file <- file.path(path, "summary.txt")
+  # =========================
+  # 5. PLOTS AUTOMATIQUES
+  # =========================
 
-  cat(
-    "FARM CARBON R OUTPUT\n",
-    "=====================\n\n",
-    "Soil dataset:\n",
-    "Rows:", nrow(soil_data), "\n",
-    "SOC mean:", mean(soil_data$SOC, na.rm = TRUE), "\n\n",
-    "Practices dataset:\n",
-    "Rows:", nrow(practices_data), "\n",
-    "=====================\n",
-    file = summary_file
+  png(file.path(path, "soc_distribution.png"), 800, 600)
+  hist(df$SOC_mean,
+       main = "SOC Distribution",
+       xlab = "SOC",
+       col = "grey")
+  dev.off()
+
+  png(file.path(path, "soc_vs_clay.png"), 800, 600)
+  plot(df$clay, df$SOC_mean,
+       main = "SOC vs Clay",
+       xlab = "Clay",
+       ylab = "SOC",
+       pch = 19)
+  dev.off()
+
+  png(file.path(path, "soc_vs_sand.png"), 800, 600)
+  plot(df$sand, df$SOC_mean,
+       main = "SOC vs Sand",
+       xlab = "Sand",
+       ylab = "SOC",
+       pch = 19)
+  dev.off()
+
+  png(file.path(path, "soc_vs_precip.png"), 800, 600)
+  plot(df$precip, df$SOC_mean,
+       main = "SOC vs Precipitation",
+       xlab = "Precipitation",
+       ylab = "SOC",
+       pch = 19)
+  dev.off()
+
+  png(file.path(path, "soc_vs_temp.png"), 800, 600)
+  plot(df$temp, df$SOC_mean,
+       main = "SOC vs Temperature",
+       xlab = "Temperature",
+       ylab = "SOC",
+       pch = 19)
+  dev.off()
+
+  png(file.path(path, "soc_by_tillage.png"), 800, 600)
+  boxplot(SOC_mean ~ travail_sol,
+          data = df,
+          main = "SOC by Tillage",
+          xlab = "Tillage",
+          ylab = "SOC",
+          col = "lightblue")
+  dev.off()
+
+  # =========================
+  # 6. RAPPORT HTML
+  # =========================
+  report_file <- file.path(path, "report.html")
+
+  html <- paste0(
+    "<html><head><title>FarmCarbonR Report</title></head><body>",
+    "<h1>FarmCarbonR Report</h1>",
+    "<p><b>Date:</b> ", Sys.time(), "</p>",
+    "<p><b>Rows:</b> ", nrow(df), "</p>",
+    "<p><b>Columns:</b> ", ncol(df), "</p>",
+    "<p><b>Missing values:</b> ", sum(is.na(df)), "</p>",
+    "<h2>Outputs generated:</h2>",
+    "<ul>",
+    "<li>Dataset CSV + RDS</li>",
+    "<li>Model (if provided)</li>",
+    "<li>Raster maps</li>",
+    "<li>Plots (PNG)</li>",
+    "</ul>",
+    "</body></html>"
   )
 
+  writeLines(html, report_file)
+
+  # =========================
+  # 7. FINAL MESSAGE
+  # =========================
+  message("Tous les outputs ont ete generes dans : ", path)
+
   return(list(
-    soil_csv = file.path(path, "soil_data.csv"),
-    practices_csv = file.path(path, "farm_practices.csv"),
-    summary = summary_file
+    dataset = df,
+    path = path
   ))
 }

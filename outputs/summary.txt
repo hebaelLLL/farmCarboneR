@@ -1,0 +1,5 @@
+===== FARM CARBON R OUTPUTS =====
+Date : 2026-06-12 18:28:51.526078
+Rows : 50
+Columns : 20
+Missing values : 0
