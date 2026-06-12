@@ -13,7 +13,9 @@
 load_environmental_covariates <- function(coords,
                                           start_date = "2023-01-01",
                                           end_date   = "2023-12-31",
-                                          path_temp  = tempdir()) {
+                                          path_temp  = tempdir(),
+                                          country      = "MA",      # <-- NOUVEAU
+                                          ndvi_fallback = NULL) {
 
   if (!all(c("lon", "lat") %in% names(coords)))
     stop("coords doit contenir lon et lat.")

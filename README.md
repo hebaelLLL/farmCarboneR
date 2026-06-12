@@ -1,620 +1,643 @@
-# farmCarbonR <img src="https://img.shields.io/badge/R-package-blue" align="right"/>
+# farmCarbonR <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" align="right"/> <img src="https://img.shields.io/badge/R-%3E%3D4.0.0-brightgreen.svg" align="right"/>
 
-> Package R pour l'estimation, la modélisation et la cartographie du stock de carbone organique des sols agricoles (SOC).
+> **Estimation et cartographie des stocks de carbone organique du sol (SOC) pour le contexte agricole marocain**  
+> Intègre SoilGrids (ISRIC), WorldClim v2, NDVI MODIS et Random Forest pour la prédiction spatiale.
 
 ---
 
-## Table des matières
+## 📋 Table des matières
 
-- [Description](#description)
+- [Vue d'ensemble](#vue-densemble)
 - [Installation](#installation)
-- [Dépendances](#dépendances)
-- [Sources des données](#sources-des-données)
-- [Structure du package](#structure-du-package)
-- [Workflow complet](#workflow-complet)
-- [Fonctions & Utilisation](#fonctions--utilisation)
-  - [1. import_soil_data()](#1-import_soil_data)
-  - [2. import_agricultural_practices()](#2-import_agricultural_practices)
-  - [3. calculate_soc_stock()](#3-calculate_soc_stock)
-  - [4. load_environmental_covariates()](#4-load_environmental_covariates)
-  - [5. extract_covariates()](#5-extract_covariates)
-  - [6. preprocess_data()](#6-preprocess_data)
-  - [7. train_rf_model()](#7-train_rf_model)
-  - [8. predict_soc_map()](#8-predict_soc_map)
-  - [9. estimate_sequestration_potential()](#9-estimate_sequestration_potential)
-  - [10. analyze_spatial_variability()](#10-analyze_spatial_variability)
-  - [11. summarize_farms()](#11-summarize_farms)
-  - [12. plot_soc_map()](#12-plot_soc_map)
-  - [13. plot_feature_importance()](#13-plot_feature_importance)
-  - [14. generate_recommendations()](#14-generate_recommendations)
-  - [15. generate_report()](#15-generate_report)
-- [Rapport généré](#rapport-généré)
-- [Auteur](#auteur)
+- [Structure du projet](#structure-du-projet)
+- [Flux de travail](#flux-de-travail)
+- [Fonctions principales](#fonctions-principales)
+- [Sources de données](#sources-de-données)
+- [Paramètres spécifiques au Maroc](#paramètres-spécifiques-au-maroc)
+- [Packages requis](#packages-requis)
+- [Tests](#tests)
+- [Historique des modifications](#historique-des-modifications)
+- [Limitations connues](#limitations-connues)
+- [Licence](#licence)
 
 ---
 
-## Description
+## Vue d'ensemble
 
-`farmCarbonR` est un outil scientifique complet permettant :
+`farmCarbonR` est un package R conçu pour estimer, cartographier et analyser les stocks de carbone organique du sol (SOC) à l'échelle des exploitations agricoles marocaines. Il combine :
 
-- d'**estimer le stock actuel de carbone (SOC)** à partir de données SoilGrids
-- d'**évaluer l'impact des pratiques agricoles** sur le carbone du sol
-- d'**identifier les zones prioritaires** pour la séquestration
-- de **modéliser le SOC** avec un modèle Random Forest
-- de **générer des rapports HTML/PDF automatiques** avec visualisations
+- Des **données terrain** (mesures SOC, pratiques agricoles)
+- Des **données de télédétection** (NDVI MODIS, altitude SRTM)
+- Des **données climatiques** (WorldClim v2 : température, précipitations)
+- Des **données pédologiques** (SoilGrids ISRIC : SOC, densité apparente, texture)
+- Un **modèle prédictif Random Forest** pour la cartographie spatiale
 
 ---
 
 ## Installation
 
 ```r
-# Depuis le dossier local
-devtools::install(".")
-
 # Depuis GitHub
-devtools::install_github("votre_nom/farmCarbonR")
+# install.packages("devtools")
+devtools::install_github("votre-username/farmCarbonR")
+
+# Ou en local
+devtools::install(".")
 ```
 
----
-
-## Dépendances
+### Dépendances obligatoires
 
 ```r
 install.packages(c(
-  "httr", "jsonlite", "readr", "readxl",
-  "dplyr", "tidyr", "purrr", "sf", "terra",
-  "geodata", "MODISTools", "spdep", "gstat",
-  "randomForest", "caret", "ggplot2",
-  "rmarkdown", "knitr", "gridExtra", "corrplot"
+  "terra", "sf", "geodata", "randomForest",
+  "dplyr", "ggplot2", "httr", "jsonlite",
+  "rmarkdown", "spdep"
 ))
 ```
 
----
+### Dépendances optionnelles
 
-## Sources des données
-
-| Donnée | Package R | Source | URL |
-|--------|-----------|--------|-----|
-| SOC, texture, densité | `httr` | SoilGrids v2.0 ISRIC | https://rest.isric.org/soilgrids/v2.0 |
-| NDVI | `MODISTools` | MODIS MOD13A3 NASA | https://modis.gsfc.nasa.gov |
-| Température, précipitations | `geodata` | WorldClim v2 | https://worldclim.org |
-| Altitude | `geodata` | SRTM NASA | https://srtm.csi.cgiar.org |
-| Pratiques agricoles | — | Terrain CSV/Excel | — |
-
-> **Note :** la taille de l'échantillon de parcelles a été augmentée par rapport aux versions précédentes, afin d'améliorer la robustesse statistique du modèle Random Forest et la représentativité spatiale des cartes générées.
+```r
+install.packages(c("MODISTools", "testthat", "knitr"))
+```
 
 ---
 
-## Structure du package
+## Structure du projet
 
 ```
 farmCarbonR/
-├── R/
-│   ├── import_soil_data.R                  # SoilGrids + CSV + shapefile
-│   ├── import_agricultural_practices.R     # CSV + Excel
-│   ├── load_environmental_covariates.R     # MODIS + WorldClim + SRTM
-│   ├── load_ndvi.R                         # MODIS MOD13A3
-│   ├── extract_covariates.R                # Jointure sol + env
-│   ├── calculate_soc_stock.R               # Formule SOC
-│   ├── preprocess_data.R                   # Pearson + VIF + split
-│   ├── train_rf_model.R                    # Random Forest
-│   ├── predict_soc_map.R                   # Raster GeoTIFF
-│   ├── estimate_sequestration_potential.R  # 3 scénarios
-│   ├── analyze_spatial_variability.R       # Moran + variogramme
-│   ├── summarize_farms.R                   # Tableau synthèse
-│   ├── plot_soc_map.R                      # 3 cartes ggplot2
-│   ├── plot_feature_importance.R           # Barplot RF
-│   ├── generate_recommendations.R          # Recommandations auto
-│   ├── generate_report.R                   # Rapport HTML/PDF
-│   ├── set_study_area.R                    # Zone d'étude
-│   └── farmCarbonR-package.R
-├── inst/extdata/
-│   ├── exemple_sol.csv
-│   └── exemple_pratiques.csv
-├── outputs/
-│   ├── soc_map.tif
-│   ├── cartes_soc.pdf
-│   ├── importance.png
-│   └── rapport_farmCarbonR.html      # ← Rapport final généré par generate_report()
-├── man/
-├── DESCRIPTION
-├── NAMESPACE
-└── README.md
+├── R/                              # Fonctions du package
+│   ├── import_soil_data.R          # Import données sol terrain
+│   ├── import_agricultural_practices.R  # Import pratiques agricoles
+│   ├── load_soilgrids.R            # API SoilGrids ISRIC
+│   ├── load_worldclim.R            # WorldClim v2 (température, précip)
+│   ├── load_ndvi.R                 # NDVI MODIS (MOD13A3)
+│   ├── load_environmental_covariates.R  # Covariables environnementales
+│   ├── set_study_area.R            # Définition zone d'étude
+│   ├── calculate_soc_stock.R       # Calcul stock SOC
+│   ├── preprocess_data.R           # Prétraitement (corrélation, VIF, normalisation)
+│   ├── extract_covariates.R        # Extraction covariables spatiales
+│   ├── train_rf_model.R            # Entraînement Random Forest
+│   ├── predict_soc_map.R           # Cartographie prédictive SOC
+│   ├── analyze_spatial_variability.R    # Variabilité spatiale (Moran)
+│   ├── estimate_sequestration_potential.R  # Potentiel séquestration carbone
+│   ├── generate_recommendations.R  # Recommandations agronomiques
+│   ├── summarize_farms.R           # Résumé par exploitation
+│   ├── plot_soc_map.R              # Visualisation carte SOC
+│   ├── plot_feature_importance.R   # Visualisation importance variables RF
+│   ├── generate_report.R           # Rapport HTML automatique
+│   └── save_outputs.R              # Sauvegarde des résultats
+│
+├── data/                           # Données intégrées
+│   ├── sample_soil_data.rda        # Données sol exemple
+│   ├── sample_farm_practices.rda   # Pratiques agricoles exemple
+│   └── soc_stock.csv               # Stocks SOC calculés
+│
+├── inst/extdata/                   # Données externes
+│   ├── exemple_sol.csv             # Template données sol
+│   ├── exemple_pratiques.csv       # Template pratiques agricoles
+│   ├── worldclim_MA.tif            # Raster climatique Maroc
+│   ├── ndvi_MA.tif                 # Raster NDVI Maroc
+│   ├── altitude.tif                # MNT altitude
+│   ├── temperature.tif             # Raster température
+│   ├── precipitation.tif           # Raster précipitations
+│   └── env_stack.tif               # Stack covariables environnementales
+│
+├── data-raw/                       # Scripts de préparation des données
+│   ├── prepare_data.R              # Téléchargement données réelles (SoilGrids, WorldClim, SRTM)
+│   └── sample_soil_data.R          # Génération données exemple
+│
+├── tests/testthat/                 # Tests unitaires
+│   ├── test-calculate_soc_stock.R
+│   ├── test-import_soil_data.R
+│   ├── test-preprocess_data.R
+│   └── test_farmCarbonR.R
+│
+├── outputs/                        # Résultats générés
+│   ├── rf_model.rds                # Modèle RF sauvegardé
+│   ├── soil_data.csv / .rds        # Données sol traitées
+│   └── farm_practices.csv / .rds   # Pratiques agricoles traitées
+│
+├── vignettes/
+│   └── introduction.Rmd            # Guide d'utilisation
+└── DESCRIPTION
 ```
 
 ---
 
-## Workflow complet
+## Flux de travail
 
 ```
-coords / shapefile
-       │
-       ▼
-import_soil_data()          ←── SoilGrids ISRIC
-       │
-       ├── import_agricultural_practices()   ←── CSV / Excel terrain
-       │
-       ▼
-calculate_soc_stock()       ←── SOC × BD × Depth × (1 - RF) / 10
-       │
-       ├── load_environmental_covariates()   ←── MODIS + WorldClim + SRTM
-       │
-       ▼
-extract_covariates()         ←── Jointure sol + environnement
-       │
-       ▼
-preprocess_data()            ←── Pearson + VIF + normalisation + split
-       │
-       ▼
-train_rf_model()             ←── Random Forest
-       │
-       ├── predict_soc_map()              ←── Raster GeoTIFF
-       │
-       ▼
-estimate_sequestration_potential()  ←── 3 scénarios
-       │
-       ├── analyze_spatial_variability()  ←── Moran + variogramme
-       ├── summarize_farms()              ←── Tableau synthèse
-       ├── plot_soc_map()                 ←── 3 cartes
-       ├── plot_feature_importance()      ←── Barplot RF
-       ├── generate_recommendations()     ←── Recommandations
-       │
-       ▼
-generate_report()            ←── Rapport HTML / PDF
+[1] Import données          import_soil_data()
+    sol + pratiques    →    import_agricultural_practices()
+         ↓
+[2] Données externes        load_soilgrids()
+    SoilGrids / WorldClim → load_worldclim()
+    NDVI / altitude    →    load_ndvi()
+                            load_environmental_covariates()
+         ↓
+[3] Calcul SOC stock   →    calculate_soc_stock()
+         ↓
+[4] Prétraitement      →    preprocess_data()
+    (corrélation, VIF,      extract_covariates()
+     normalisation)
+         ↓
+[5] Modélisation RF    →    train_rf_model()
+         ↓
+[6] Cartographie       →    predict_soc_map()
+                            plot_soc_map()
+                            plot_feature_importance()
+         ↓
+[7] Analyse & Résultats →   analyze_spatial_variability()
+                            estimate_sequestration_potential()
+                            generate_recommendations()
+                            summarize_farms()
+         ↓
+[8] Export             →    generate_report()
+                            save_outputs()
 ```
 
 ---
 
-## Fonctions & Utilisation
+## Fonctions principales
 
 ### 1. `import_soil_data()`
 
-Importe les données pédologiques depuis l'API SoilGrids ou un fichier local.
+Importe et valide les données sol terrain.
 
 ```r
-library(farmCarbonR)
-
-# Option A : coordonnées GPS
-coords <- data.frame(
-  parcelle_id = paste0("P", sprintf("%03d", 1:5)),
-  lon = c(-5.96, -6.38, -5.23, -6.36, -6.97),
-  lat = c(31.08, 32.61, 30.30, 33.36, 33.81)
-)
-sol <- import_soil_data(source = "soilgrids", coords = coords)
-
-# Option B : shapefile
-sol <- import_soil_data(source = "soilgrids", shapefile = "parcelles.shp")
+sol <- import_soil_data("inst/extdata/exemple_sol.csv")
 ```
 
-**Variables retournées :**
+**Colonnes attendues :** `parcelle_id`, `lon`, `lat`, `SOC_mean`, `BD_mean`
 
-| Colonne | Description | Unité | Source |
-|---------|-------------|-------|--------|
-| `SOC` | Carbone organique | % | SoilGrids |
-| `bulk_density` | Densité apparente | g/cm³ | SoilGrids |
-| `clay` | Argile | % | SoilGrids |
-| `sand` | Sable | % | SoilGrids |
-| `silt` | Limon | % | SoilGrids |
-| `rock_fragment` | Fragments grossiers | fraction | SoilGrids |
-| `depth` | Profondeur | cm | SoilGrids |
-
-**Visualisation — Composition texturale :**
-
-```r
-library(ggplot2)
-library(tidyr)
-
-texture_long <- pivot_longer(
-  sol$dataframe[, c("parcelle_id","clay","sand","silt")],
-  cols = c(clay, sand, silt),
-  names_to = "fraction", values_to = "pct"
-)
-
-ggplot(texture_long, aes(x = parcelle_id, y = pct, fill = fraction)) +
-  geom_col(position = "stack") +
-  scale_fill_manual(
-    values = c(clay = "#a6611a", sand = "#dfc27d", silt = "#80cdc1"),
-    labels = c("Argile","Sable","Limon")
-  ) +
-  labs(title = "Composition texturale des sols",
-       x = "Parcelle", y = "Fraction (%)") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+**Output :**
+```
+parcelle_id   lon     lat   SOC_mean  BD_mean
+P001         -5.12   32.45   12.3      1.32
+P002         -5.08   32.51   15.7      1.28
+...
 ```
 
 ---
 
 ### 2. `import_agricultural_practices()`
 
-Importe et joint les pratiques agricoles au jeu de données sol (CSV ou Excel).
+Importe les pratiques agricoles par parcelle.
 
 ```r
-path_pratiques <- system.file("extdata", "exemple_pratiques.csv",
-                               package = "farmCarbonR")
-
-pratiques <- import_agricultural_practices(
-  path      = path_pratiques,
-  format    = "csv",
-  join_data = sol$dataframe,
-  join_by   = "parcelle_id"
-)
+pratiques <- import_agricultural_practices("inst/extdata/exemple_pratiques.csv")
 ```
 
-**Format CSV attendu :**
-
-| parcelle_id | travail_sol | couvert_vegetal | irrigation | fertilisation_organique | rotation |
-|-------------|-------------|-----------------|------------|------------------------|----------|
-| P001 | semis_direct | oui | oui | aucune | triennale |
-| P002 | labour | oui | non | fumier | triennale |
-| P003 | semis_direct | non | non | compost | biennale |
-
-**Visualisation — Travail du sol et couvert végétal :**
-
-```r
-ggplot(pratiques, aes(x = travail_sol, fill = couvert_vegetal)) +
-  geom_bar(position = "dodge") +
-  scale_fill_brewer(palette = "Set2") +
-  labs(title = "Travail du sol et couvert végétal",
-       x = "Travail du sol", y = "N parcelles",
-       fill = "Couvert") +
-  theme_minimal()
-```
+**Colonnes attendues :** `parcelle_id`, `travail_sol`, `couvert_vegetal`, `fertilisation_organique`, `rotation`
 
 ---
 
-### 3. `calculate_soc_stock()`
+### 3. `load_soilgrids()`
 
-Calcule le stock de carbone organique (tC/ha) selon la formule standard.
-
-**Formule :**
-```
-SOC_stock (tC/ha) = SOC × BulkDensity × Depth × (1 - RockFragment) / 10
-```
+Télécharge SOC, densité apparente et texture depuis l'API SoilGrids ISRIC.
 
 ```r
-sol_stock <- calculate_soc_stock(pratiques)
+sg <- load_soilgrids(lon = -5.0, lat = 32.0, depth = "0-30cm")
 ```
 
-**Visualisation — Distribution du stock SOC :**
-
-```r
-ggplot(sol_stock, aes(x = SOC_stock_tCha)) +
-  geom_histogram(bins = 10, fill = "#1a9850", color = "white", alpha = 0.8) +
-  geom_vline(xintercept = mean(sol_stock$SOC_stock_tCha, na.rm = TRUE),
-             color = "#d73027", linetype = "dashed", size = 1) +
-  labs(title = "Distribution du stock SOC",
-       x = "SOC stock (tC/ha)", y = "Nombre de parcelles") +
-  theme_minimal()
+**Output :**
 ```
+  lon   lat   depth  SOC_gkg  BD_gcm3  clay_pct  silt_pct  sand_pct
+ -5.0  32.0  0-30cm    12.0     1.30      25.0      30.0      45.0
+```
+
+> ⚠️ **Spécifique Maroc** : En cas de timeout de l'API SoilGrids, des valeurs de repli calibrées sur les sols marocains sont automatiquement utilisées :
+> `SOC = 12.0 g/kg`, `BD = 1.30 g/cm³`, `argile = 25%`, `limon = 30%`, `sable = 45%`
+> Ces valeurs correspondent aux moyennes des sols agricoles du Maroc central.
 
 ---
 
-### 4. `load_environmental_covariates()`
+### 4. `load_worldclim()`
 
-Télécharge les covariables environnementales depuis MODIS, WorldClim et SRTM.
+Télécharge température et précipitations depuis WorldClim v2 pour le Maroc.
 
 ```r
-covars <- load_environmental_covariates(
-  coords     = coords,
+wc <- load_worldclim(country = "MA", output_dir = "data")
+```
+
+**Output :** `SpatRaster` avec 2 couches :
+
+| Couche | Description | Unité |
+|--------|-------------|-------|
+| `temp_mean_C` | Température moyenne annuelle | °C |
+| `prec_annual_mm` | Précipitations annuelles | mm |
+
+> ℹ️ **Résolution** : 2.5 arcmin (~5 km). Le raster est sauvegardé sous `data/worldclim_MA.tif`.
+
+---
+
+### 5. `load_ndvi()`
+
+Télécharge le NDVI depuis MODIS (produit MOD13A3) via MODISTools.
+
+```r
+ndvi <- load_ndvi(
+  coords     = sol[, c("parcelle_id", "lon", "lat")],
   start_date = "2023-01-01",
   end_date   = "2023-12-31"
 )
 ```
 
-**Variables retournées :**
-
-| Variable | Package | Source | Unité |
-|----------|---------|--------|-------|
-| `ndvi` | `MODISTools` | MODIS MOD13A3 | indice 0–1 |
-| `temp` | `geodata` | WorldClim tavg | °C |
-| `precip` | `geodata` | WorldClim prec | mm/mois |
-| `alt` | `geodata` | SRTM | m |
-
-**Visualisation — NDVI moyen annuel :**
-
-```r
-ggplot(covars, aes(x = lon, y = lat, color = ndvi, size = ndvi)) +
-  geom_point(alpha = 0.8) +
-  scale_color_gradientn(
-    colors = c("#d73027","#fee08b","#1a9850"),
-    name = "NDVI") +
-  labs(title = "NDVI moyen annuel (MODIS)",
-       x = "Longitude", y = "Latitude") +
-  theme_minimal()
+**Output :**
 ```
+parcelle_id   lon     lat    ndvi
+P001         -5.12   32.45  0.3412
+P002         -5.08   32.51  0.2987
+...
+```
+
+> ⚠️ **Spécifique Maroc** : En cas d'indisponibilité MODIS, la valeur de repli est `NDVI = 0.35`, correspondant à la moyenne NDVI des zones agricoles marocaines semi-arides.
 
 ---
 
-### 5. `extract_covariates()`
+### 6. `load_environmental_covariates()`
 
-Joint les données sol et les covariables environnementales pour modélisation.
+Télécharge toutes les covariables environnementales en une seule étape (NDVI, température, précipitations, altitude).
 
 ```r
-df_model <- extract_covariates(
-  soil_data = sol_stock,
-  env_data  = covars
+covars <- load_environmental_covariates(
+  coords     = sol[, c("parcelle_id", "lon", "lat")],
+  start_date = "2023-01-01",
+  end_date   = "2023-12-31"
 )
 ```
 
+**Output :**
+```
+lon      lat    ndvi    temp   precip   alt
+-5.12   32.45  0.3412  17.23   342.1   412.5
+-5.08   32.51  0.2987  16.89   358.7   398.2
+...
+```
+
+> ⚠️ **Spécifique Maroc** : Le pays est fixé à `"MA"` pour WorldClim et SRTM. Les valeurs de repli NDVI (`0.35`) et SoilGrids sont calibrées pour le Maroc.
+
 ---
 
-### 6. `preprocess_data()`
+### 7. `calculate_soc_stock()`
 
-Prépare les données pour la modélisation : sélection de variables, normalisation, split train/test.
+Calcule le stock de carbone organique du sol en tC/ha.
+
+**Formule :**
+```
+SOC_stock (tC/ha) = SOC_mean (g/kg) × BD_mean (g/cm³) × depth (cm) / 10
+```
 
 ```r
-prep <- preprocess_data(
-  data          = df_model,
+sol <- calculate_soc_stock(sol, depth = 30, output_dir = "data")
+```
+
+**Output :**
+```
+parcelle_id  SOC_mean  BD_mean  SOC_stock_tCha
+P001           12.3     1.32        48.71
+P002           15.7     1.28        60.29
+...
+# SOC stock moyen : 54.50 tC/ha
+```
+
+> Le résultat est automatiquement exporté dans `data/soc_stock.csv`.
+
+---
+
+### 8. `preprocess_data()`
+
+Prétraitement complet des données pour la modélisation :
+- Suppression des variables corrélées (Pearson > 0.85)
+- Calcul et filtrage VIF (> 10)
+- Normalisation z-score
+- Split train/test (80/20)
+
+```r
+processed <- preprocess_data(
+  data          = data_complete,
   target        = "SOC_stock_tCha",
-  cor_threshold = 0.9,
+  cor_threshold = 0.85,
+  vif_threshold = 10,
   train_ratio   = 0.8,
-  normalize     = TRUE
+  seed          = 42
 )
 ```
 
-**Méthodes appliquées :**
+**Output :**
+```
+$train         # data.frame — 80% des données normalisées
+$test          # data.frame — 20% des données normalisées
+$features_kept # character — variables conservées
+$removed_vars  # character — variables retirées (corrélation ou VIF)
 
-| Méthode | Description |
-|---------|-------------|
-| Pearson | Suppression variables corrélées > 0.9 |
-| VIF | Suppression variables colinéaires > 10 |
-| Min-max | Normalisation 0–1 |
-| Split | 80% train / 20% test |
-
-**Objets retournés :** `prep$train`, `prep$test`, `prep$removed_vars`
-
-**Visualisation — Matrice de corrélation :**
-
-```r
-library(corrplot)
-mat_cor <- cor(prep$train, use = "complete.obs")
-corrplot(mat_cor, method = "color", type = "upper",
-         tl.cex = 0.8, title = "Matrice de corrélation")
+# Variables retirées (corrélation > 0.85) : prec_annual_mm
+# Prétraitement terminé : 5 variables conservées
+# Train : 80 lignes | Test : 20 lignes
 ```
 
 ---
 
-### 7. `train_rf_model()`
+### 9. `train_rf_model()`
 
-Entraîne un modèle Random Forest pour prédire le stock SOC.
+Entraîne un modèle Random Forest avec métriques complètes.
 
 ```r
 rf <- train_rf_model(
-  train_data = prep$train,
-  test_data  = prep$test,
+  train_data = processed$train,
+  test_data  = processed$test,
   target     = "SOC_stock_tCha",
-  ntree      = 500
+  ntree      = 500,
+  mtry       = NULL,   # auto : floor(p/3)
+  seed       = 42
 )
 ```
 
-**Métriques retournées :**
+**Output :**
+```
+$model        # Objet randomForest
+$importance   # data.frame — importance des variables (%IncMSE)
+$oob_error    # OOB RMSE
+$rmse_train   # RMSE sur train
+$r2_train     # R² sur train
+$rmse_test    # RMSE sur test
+$r2_test      # R² sur test
+$predicteurs  # Variables utilisées
 
-| Objet | Description |
-|-------|-------------|
-| `rf$model` | Modèle Random Forest |
-| `rf$importance` | Importance des variables |
-| `rf$oob_error` | Erreur OOB (RMSE) |
-| `rf$rmse_train` | RMSE train |
-| `rf$rmse_test` | RMSE test |
-| `rf$r2_train` | R² train |
-| `rf$r2_test` | R² test |
+# RF entraîné.
+#   OOB RMSE   = 4.2156
+#   RMSE Train = 2.1034 | R2 Train = 0.9412
+#   RMSE Test  = 5.3821 | R2 Test  = 0.8734
+```
 
 ---
 
-### 8. `predict_soc_map()`
+### 10. `predict_soc_map()`
 
-Génère une carte raster (GeoTIFF) du stock SOC prédit sur la zone d'étude.
+Génère une carte raster prédictive du stock SOC sur toute la zone d'étude.
 
 ```r
-carte_soc <- predict_soc_map(
-  rf_result    = rf,
-  raster_stack = covars_raster,
-  output_path  = "outputs/soc_map.tif"
+soc_map <- predict_soc_map(
+  rf_model  = rf$model,
+  env_stack = covars_raster,
+  predicteurs = rf$predicteurs
 )
 ```
 
-**Visualisation du raster :**
-
-```r
-library(terra)
-plot(carte_soc, main = "Carte SOC prédite (tC/ha)",
-     col = colorRampPalette(c("#d73027","#fee08b","#1a9850"))(100))
-```
-
-**Output généré :** `outputs/soc_map.tif`
+**Output :** `SpatRaster` — carte SOC en tC/ha sur la zone d'étude.
 
 ---
 
-### 9. `estimate_sequestration_potential()`
+### 11. `analyze_spatial_variability()`
 
-Estime le potentiel de séquestration selon 3 scénarios de pratiques agricoles améliorées.
+Analyse la variabilité spatiale du SOC (indice de Moran, krigeage descriptif).
 
 ```r
-sequestration <- estimate_sequestration_potential(
-  data              = sol_stock,
-  gain_couvert      = 0.3,
-  gain_semis_direct = 0.25,
-  gain_compost      = 0.4
+spatial <- analyze_spatial_variability(sol_sf)
+```
+
+**Output :**
+```
+$moran_i      # Indice de Moran global
+$moran_pval   # p-value du test
+$hotspots     # Parcelles à fort SOC
+$coldspots    # Parcelles à faible SOC
+```
+
+---
+
+### 12. `estimate_sequestration_potential()`
+
+Estime le gain potentiel en carbone selon 3 scénarios de pratiques agricoles améliorées.
+
+```r
+seq_data <- estimate_sequestration_potential(
+  data              = sol,
+  gain_couvert      = 0.3,   # tC/ha/an — couvert végétal
+  gain_semis_direct = 0.25,  # tC/ha/an — semis direct
+  gain_compost      = 0.4    # tC/ha/an — apport organique
 )
 ```
 
-**Scénarios calculés :**
-
-| Scénario | Gain (tC/ha) | Condition déclenchante |
-|----------|-------------|----------------------|
+| Scénario | Gain (tC/ha/an) | Condition déclenchante |
+|----------|-----------------|------------------------|
 | Couvert végétal | +0.30 | `couvert_vegetal == "non"` |
 | Semis direct | +0.25 | `travail_sol == "labour"` |
-| Apport organique | +0.40 | `fertilisation == "aucune"` |
+| Apport organique | +0.40 | `fertilisation_organique == "aucune"` |
 
-**Colonnes ajoutées :** `gain_couvert_tCha`, `gain_semis_direct_tCha`, `gain_pratiques_tCha`, `gain_total_tCha`, `SOC_potentiel_tCha`
+**Output :**
+```
+# Gain moyen : 0.65 tC/ha | Max : 0.95 tC/ha
 
-**Visualisation — Gains par scénario :**
-
-```r
-library(tidyr)
-sc_long <- pivot_longer(
-  sequestration[, c("parcelle_id","gain_couvert_tCha",
-                    "gain_semis_direct_tCha","gain_pratiques_tCha")],
-  cols = -parcelle_id,
-  names_to = "scenario", values_to = "gain"
-)
-
-ggplot(sc_long, aes(x = scenario, y = gain, fill = scenario)) +
-  geom_boxplot(alpha = 0.7) +
-  scale_fill_brewer(palette = "Set2") +
-  labs(title = "Gain potentiel par scénario",
-       x = "Scénario", y = "Gain SOC (tC/ha)") +
-  theme_minimal() +
-  theme(legend.position = "none")
+gain_couvert_tCha  gain_semis_direct_tCha  gain_pratiques_tCha  gain_total_tCha  SOC_potentiel_tCha
+     0.30                  0.25                   0.40               0.95              55.66
+     0.00                  0.25                   0.40               0.65              60.94
 ```
 
 ---
 
-### 10. `analyze_spatial_variability()`
+### 13. `generate_recommendations()`
 
-Analyse la structure spatiale du SOC (variogramme, test de Moran, krigeage optionnel).
-
-```r
-spatial <- analyze_spatial_variability(sequestration)
-print(spatial$stats)
-print(spatial$moran)
-```
-
-**Méthodes appliquées :**
-
-| Méthode | Package | Description |
-|---------|---------|-------------|
-| Variogramme | `base R` | Structure spatiale du SOC |
-| Test de Moran | `spdep` | Autocorrélation spatiale |
-| Krigeage | `gstat` | Interpolation spatiale (optionnel) |
-
-**Visualisation — Variogramme empirique :**
+Génère des recommandations agronomiques automatiques par parcelle.
 
 ```r
-variogram_df <- spatial$variogram_df
-
-ggplot(variogram_df, aes(x = distance, y = gamma)) +
-  geom_point(size = 3, color = "#1a9850") +
-  geom_line(color = "#1a9850", alpha = 0.6) +
-  labs(title = "Variogramme empirique du SOC",
-       x = "Distance", y = "Semi-variance") +
-  theme_minimal()
+reco <- generate_recommendations(sol, seuil_faible = 40)
 ```
 
----
-
-### 11. `summarize_farms()`
-
-Produit un tableau synthétique des indicateurs clés par parcelle et par exploitation.
-
-```r
-resume <- summarize_farms(sequestration)
-print(resume$stats)
-```
-
-**Exemple de sortie :**
-
-| n_parcelles | SOC_moyen | SOC_min | SOC_max | gain_moyen_tCha | pratique_dominante |
-|-------------|-----------|---------|---------|-----------------|-------------------|
-| 20 | 58.34 | 9.87 | 118.45 | 0.38 | semis_direct |
-
----
-
-### 12. `plot_soc_map()`
-
-Génère 3 cartes ggplot2 du SOC actuel, du potentiel et des scénarios agricoles.
-
-```r
-plot_soc_map(sequestration, output_path = "outputs/cartes_soc.pdf")
-```
-
-**Cartes générées :**
-
-| Carte | Description |
-|-------|-------------|
-| Carte 1 | Stock SOC actuel — points colorés par intensité |
-| Carte 2 | Potentiel de séquestration — gradient bleu |
-| Carte 3 | Gain par scénario agricole — boxplots comparatifs |
-
-**Output généré :** `outputs/cartes_soc.pdf`
-
----
-
-### 13. `plot_feature_importance()`
-
-Visualise l'importance des variables du modèle Random Forest (barplot).
-
-```r
-plot_feature_importance(rf, top_n = 10,
-                        output_path = "outputs/importance.png")
-```
-
-**Output généré :** `outputs/importance.png`
-
----
-
-### 14. `generate_recommendations()`
-
-Génère automatiquement des recommandations agronomiques par parcelle selon les seuils SOC et les pratiques.
-
-```r
-reco <- generate_recommendations(sequestration, seuil_faible = 40)
-```
-
-**Règles appliquées :**
+**Règles de recommandation :**
 
 | Condition | Recommandation générée |
-|-----------|----------------------|
-| `SOC < 40 tC/ha` | Augmenter la matière organique |
-| `travail_sol == "labour"` | Passer en semis direct |
-| `couvert_vegetal == "non"` | Ajouter des couverts végétaux |
-| `fertilisation == "aucune"` | Ajouter compost ou fumier |
-| `rotation == "monoculture"` | Améliorer la rotation culturale |
-| Aucune condition | Maintenir les pratiques actuelles |
+|-----------|------------------------|
+| `SOC_stock_tCha < 40` | "SOC faible : augmenter matière organique." |
+| `travail_sol == "labour"` | "Réduire le labour : passer en semis direct." |
+| `couvert_vegetal == "non"` | "Ajouter des couverts végétaux." |
+| `fertilisation_organique == "aucune"` | "Ajouter compost ou fumier." |
+| `rotation == "monoculture"` | "Améliorer la rotation culturale." |
+| Toutes bonnes pratiques | "Maintenir les pratiques actuelles." |
 
 ---
 
-### 15. `generate_report()`
+### 14. `plot_soc_map()`
 
-Génère un rapport complet en HTML ou PDF avec toutes les visualisations et recommandations.
+Visualise la carte prédictive du SOC.
+
+```r
+plot_soc_map(soc_map, title = "Stock SOC - Maroc")
+```
+
+**Output :** Carte ggplot2 avec gradient de couleur tC/ha.
+
+---
+
+### 15. `plot_feature_importance()`
+
+Visualise l'importance des variables du modèle Random Forest.
+
+```r
+plot_feature_importance(rf$importance)
+```
+
+**Output :** Graphique à barres trié par `%IncMSE`.
+
+---
+
+### 16. `generate_report()`
+
+Génère un rapport HTML complet avec toutes les analyses, cartes et statistiques.
 
 ```r
 generate_report(
-  data          = reco,
-  rf_result     = rf,
-  output_format = "html",   # ou "pdf"
-  output_dir    = "outputs/",
-  titre         = "Rapport farmCarbonR"
+  sol_data    = sol,
+  rf_results  = rf,
+  seq_data    = seq_data,
+  output_file = "rapport_SOC_Maroc.html"
 )
 ```
 
-**Sections du rapport généré :**
-
-| Section | Contenu | Visualisation |
-|---------|---------|---------------|
-| Résumé exécutif | Indicateurs clés | Tableau |
-| Données sol | SOC, texture, densité | Tableau + histogramme + barres empilées |
-| Pratiques agricoles | Travail sol, couverts | Tableaux + barplots + boxplots |
-| Carte SOC actuel | Points géolocalisés | Carte points colorés |
-| Potentiel séquestration | Gains par scénario | Carte + boxplots + tableau |
-| Modèle RF | Métriques de performance | Tableau + barplot importance |
-| Recommandations | Par parcelle | Tableau |
-| Sources | Références | Tableau |
-
-**Output généré :** `outputs/rapport_farmCarbonR.html` (ou `.pdf`)
+**Packages requis pour le rapport :** `ggplot2`, `knitr`, `dplyr`, `tidyr`, `gridExtra`
 
 ---
 
-## Rapport généré
+### 17. `save_outputs()`
 
-Le rapport final, produit par `generate_report()`, est disponible localement après exécution du package :
+Sauvegarde tous les résultats (CSV, RDS, rasters) dans le dossier de sortie.
 
-📄 **`outputs/rapport_farmCarbonR.html`**
-
-> Ce fichier est généré automatiquement à la fin du workflow R. Ouvrez-le dans votre navigateur pour consulter l'ensemble des résultats : indicateurs clés, cartes SOC, potentiel de séquestration, performance du modèle Random Forest et recommandations par parcelle.
+```r
+save_outputs(
+  sol_data   = sol,
+  rf_model   = rf$model,
+  soc_map    = soc_map,
+  output_dir = "outputs"
+)
+```
 
 ---
 
-## Auteur
-Hiba Elguarouani IDSA IAV
-Package développé dans le cadre d'un projet scientifique d'évaluation du carbone organique des sols agricoles.
+## Sources de données
+
+| Source | Données | Résolution | Accès |
+|--------|---------|------------|-------|
+| **SoilGrids ISRIC v2** | SOC, BD, texture (argile, limon, sable) | 250 m | API REST `rest.isric.org` |
+| **WorldClim v2** | Température, précipitations | 2.5 arcmin (~5 km) | `geodata::worldclim_country()` |
+| **MODIS MOD13A3** | NDVI mensuel | 500 m | `MODISTools::mt_subset()` |
+| **SRTM** | Altitude (MNT) | 3 arcsecondes (~90 m) | `geodata::elevation_3s()` |
+
+---
+
+## Paramètres spécifiques au Maroc
+
+> ℹ️ Ce package a été **conçu et calibré pour le contexte agricole marocain**. Les paramètres suivants sont des valeurs fixes optimisées pour le Maroc et documentées ici à titre de transparence.
+
+### Valeurs de repli SoilGrids (`load_soilgrids`)
+
+Utilisées automatiquement si l'API ISRIC est inaccessible (timeout) :
+
+| Variable | Valeur de repli | Unité | Justification |
+|----------|-----------------|-------|---------------|
+| SOC | 12.0 | g/kg | Moyenne sols agricoles Maroc central |
+| Densité apparente | 1.30 | g/cm³ | Référence sols cultivés semi-arides |
+| Argile | 25.0 | % | Texture typique sols marocains |
+| Limon | 30.0 | % | Texture typique sols marocains |
+| Sable | 45.0 | % | Texture typique sols marocains |
+
+### NDVI de repli (`load_ndvi`, `load_environmental_covariates`)
+
+```r
+ndvi_fallback = 0.35  # Moyenne NDVI zones agricoles semi-arides marocaines
+```
+
+### Pays par défaut
+
+```r
+country = "MA"  # Code ISO 3166-1 alpha-2 — Maroc
+```
+Utilisé dans `load_worldclim()` et `load_environmental_covariates()`.
+
+### Période NDVI par défaut
+
+```r
+start_date = "2023-01-01"
+end_date   = "2023-12-31"
+```
+
+### Seuil SOC faible (`generate_recommendations`)
+
+```r
+seuil_faible = 40  # tC/ha — seuil typique sols agricoles marocains
+```
+
+---
+
+## Packages requis
+
+| Package | Version min | Rôle |
+|---------|-------------|------|
+| `terra` | ≥ 1.5.0 | Manipulation rasters |
+| `sf` | ≥ 1.0.0 | Données spatiales vectorielles |
+| `geodata` | ≥ 0.5.0 | Téléchargement WorldClim, SRTM |
+| `randomForest` | ≥ 4.7.0 | Modélisation Random Forest |
+| `dplyr` | — | Manipulation données |
+| `ggplot2` | ≥ 3.4.0 | Visualisations |
+| `httr` | ≥ 1.4.0 | Requêtes API SoilGrids |
+| `jsonlite` | ≥ 1.8.0 | Parsing JSON (SoilGrids) |
+| `spdep` | ≥ 1.2.0 | Analyse spatiale (Moran) |
+| `rmarkdown` | ≥ 2.20 | Génération rapport HTML |
+| `MODISTools` | optionnel | Téléchargement NDVI MODIS |
+| `testthat` | ≥ 3.0.0 | Tests unitaires |
+| `knitr` | optionnel | Vignettes et rapport |
+
+---
+
+## Tests
+
+```r
+# Lancer tous les tests
+devtools::test()
+
+# Ou via testthat
+testthat::test_dir("tests/testthat")
+```
+
+**Couverture des tests :**
+
+| Fichier de test | Fonctions testées |
+|-----------------|-------------------|
+| `test-calculate_soc_stock.R` | `calculate_soc_stock()` |
+| `test-import_soil_data.R` | `import_soil_data()` |
+| `test-preprocess_data.R` | `preprocess_data()` |
+| `test_farmCarbonR.R` | Tests d'intégration globaux |
+
+---
+
+## Historique des modifications
+
+| Commit | Description |
+|--------|-------------|
+| `0699944` | Mise à jour README |
+| `3e6d2eb` | Remplacement données simulées par données réelles (SoilGrids, WorldClim, SRTM, NDVI) |
+| `7540478` | Mise à jour métriques de performance du modèle RF |
+| `d8b75a6` | Ajout lien rapport HTML dans README |
+| `edcdc98` | Correction URLs images vers liens GitHub raw |
+| `2b2f948` | Ajout images de prévisualisation dans README |
+| `9eb496b` | Sauvegarde avant migration LFS |
+| `dfedb3a` | Migration grands rasters vers Git LFS |
+| `b429fd6` | Suivi fichiers `.tif` avec Git LFS |
+| `0337624` | **Commit initial** : farmCarbonR v1.0.0 |
+
+---
+
+## Limitations connues
+
+- **Périmètre géographique** : Calibré exclusivement pour le **Maroc**. Les valeurs de repli et seuils sont spécifiques au contexte agricole marocain semi-aride.
+- **Connectivité requise** : Les fonctions `load_*` nécessitent une connexion internet pour accéder aux APIs SoilGrids, WorldClim et MODIS.
+- **NDVI 2023** : La période NDVI par défaut est fixée à 2023. Modifier `start_date` / `end_date` pour d'autres années.
+- **Rasters volumineux** : Les fichiers `.tif` sont gérés via **Git LFS**. S'assurer que Git LFS est installé avant de cloner le dépôt.
+- **MODISTools** : Package optionnel, non listé dans `DESCRIPTION`. À installer manuellement si nécessaire.
+
+---
+
+## Licence
+
+MIT © farmCarbonR — voir [LICENSE](LICENSE.md)
