@@ -2,33 +2,41 @@
 % Please edit documentation in R/save_outputs.R
 \name{save_outputs}
 \alias{save_outputs}
-\title{Exporter tous les outputs du pipeline farmCarbonR}
+\title{Sauvegarder tous les outputs du pipeline farmCarbonR (VERSION AMÉLIORÉE)}
 \usage{
 save_outputs(
   soil_data,
   practices_data,
   model = NULL,
   soc_map = NULL,
+  rf_importance = NULL,
   sequestration_map = NULL,
   path = "outputs"
 )
 }
 \arguments{
-\item{soil_data}{dataframe sol}
+\item{soil_data}{Data frame. Données sol avec colonne parcelle_id et SOC_stock_tCha.}
 
-\item{practices_data}{dataframe pratiques agricoles}
+\item{practices_data}{Data frame. Pratiques agricoles avec colonne parcelle_id.}
 
-\item{model}{modèle RF (optionnel)}
+\item{model}{Liste. Résultat de train_rf_model(). RECOMMANDÉ.}
 
-\item{soc_map}{raster SOC (optionnel)}
+\item{soc_map}{SpatRaster. Carte SOC prédite. Recommandé.}
 
-\item{sequestration_map}{raster potentiel (optionnel)}
+\item{rf_importance}{Data frame. Importance des variables (from model$importance).}
 
-\item{path}{dossier de sortie}
+\item{sequestration_map}{SpatRaster optionnel. Carte potentiel séquestration. Par défaut NULL.}
+
+\item{path}{Caractère. Dossier de sortie. Par défaut "outputs".}
 }
 \value{
-liste des fichiers générés
+Liste : dataset (data frame fusionné) et path (dossier de sortie).
 }
 \description{
-Exporter tous les outputs du pipeline farmCarbonR
+Génère le dataset final (CSV + RDS), un résumé texte, le modèle RF,
+les cartes raster SOC, une série de graphiques exploratoires PNG,
+ET LES 2 VISUALISATIONS ESSENTIELLES :
+  - Carte SOC prédictive (plot_soc_map)
+  - Importance des variables (plot_feature_importance)
+Plus un rapport HTML synthétique.
 }

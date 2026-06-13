@@ -6,7 +6,7 @@
 \usage{
 preprocess_data(
   data,
-  target = "SOC_stock",
+  target = "SOC_stock_tCha",
   cor_threshold = 0.85,
   vif_threshold = 10,
   train_ratio = 0.8,
@@ -16,7 +16,7 @@ preprocess_data(
 \arguments{
 \item{data}{data.frame issu de extract_covariates()}
 
-\item{target}{Nom de la colonne cible (defaut: "SOC_stock")}
+\item{target}{Nom de la colonne cible (defaut: "SOC_stock_tCha")}
 
 \item{cor_threshold}{Seuil correlation Pearson (defaut: 0.85)}
 
@@ -36,6 +36,6 @@ Normalise les variables numeriques, supprime les variables trop correlees
 \examples{
 \dontrun{
 data(sample_soil_data)
-processed <- preprocess_data(sample_soil_data, target = "SOC_mean")
+processed <- preprocess_data(sample_soil_data, target = "SOC_stock_tCha")
 }
 }

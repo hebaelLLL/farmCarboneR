@@ -2,32 +2,17 @@
 % Please edit documentation in R/generate_report.R
 \name{generate_report}
 \alias{generate_report}
-\title{G<c3><a9>n<c3><a9>rer un rapport HTML ou PDF complet}
+\title{Générer un rapport scientifique farmCarbonR}
 \usage{
 generate_report(
   data,
   rf_result = NULL,
-  output_format = "html",
+  soc_map = NULL,
   output_dir = "outputs",
-  titre = "Rapport farmCarbonR"
+  output_format = "html",
+  titre = "Rapport scientifique farmCarbonR"
 )
 }
-\arguments{
-\item{data}{Data frame final avec toutes les variables.}
-
-\item{rf_result}{Liste optionnelle. R<c3><a9>sultat de train_rf_model().}
-
-\item{output_format}{Caract<c3><a8>re. "html" ou "pdf". Par d<c3><a9>faut "html".}
-
-\item{output_dir}{Caract<c3><a8>re. Dossier de sortie. Par d<c3><a9>faut "outputs".}
-
-\item{titre}{Caract<c3><a8>re. Titre du rapport.}
-}
-\value{
-Chemin du rapport g<c3><a9>n<c3><a9>r<c3><a9>.
-}
 \description{
-Produit un rapport scientifique d<c3><a9>taill<c3><a9> avec stocks carbone,
-pratiques agricoles, cartes SOC, potentiel s<c3><a9>questration,
-importance variables RF et recommandations.
+Générer un rapport scientifique farmCarbonR
 }

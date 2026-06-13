@@ -8,7 +8,9 @@ load_environmental_covariates(
   coords,
   start_date = "2023-01-01",
   end_date = "2023-12-31",
-  path_temp = tempdir()
+  path_temp = tempdir(),
+  country = "MA",
+  ndvi_fallback = NULL
 )
 }
 \arguments{
@@ -19,6 +21,10 @@ load_environmental_covariates(
 \item{end_date}{Caractère. Date fin MODIS. Par défaut "2023-12-31".}
 
 \item{path_temp}{Caractère. Dossier temporaire pour téléchargements.}
+
+\item{country}{Caractère. Code pays ISO 3166-1 alpha-2/alpha-3. Par défaut "MA".}
+
+\item{ndvi_fallback}{Numérique. Valeur de repli NDVI si MODIS indisponible. Par défaut 0.35.}
 }
 \value{
 Data frame avec colonnes ndvi, temp, precip, alt par parcelle.

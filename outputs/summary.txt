@@ -1,5 +1,13 @@
 ===== FARM CARBON R OUTPUTS =====
-Date : 2026-06-12 18:54:12.300932
+Date : 2026-06-13 19:34:06.371519
 Rows : 50
 Columns : 20
 Missing values : 0
+
+FICHIERS GÉNÉRÉS :
+  ✓ final_dataset.csv/rds - Dataset complet
+  ✓ plot_soc_map.png - CARTE SOC (PRIORITAIRE)
+  ✓ plot_feature_importance.png - IMPORTANCE VARIABLES (PRIORITAIRE)
+  ✓ Graphiques exploratoires (soc_vs_*, soc_distribution, soc_by_tillage)
+  ✓ rf_model.rds - Modèle Random Forest
+  ✓ report.html - Rapport synthétique

@@ -7,7 +7,7 @@
 calculate_soc_stock(sol_data, depth = 30, output_dir = "data")
 }
 \arguments{
-\item{sol_data}{Data frame ou sf avec SOC_mean et BD_mean.}
+\item{sol_data}{Data frame ou sf avec SOC_mean, BD_mean et optionnellement rock_fragment.}
 
 \item{depth}{Profondeur en cm. Par defaut 30.}
 
