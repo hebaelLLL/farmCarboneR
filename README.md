@@ -41,7 +41,7 @@
 
 **Carte prédictive du SOC générée par le modèle Random Forest pour le Maroc**
 
-![Carte SOC - farmCarbonR](img/plot_soc_map.png)
+![Carte SOC - farmCarbonR](outputs/plot_soc_map_idw.png)
 
 **Description:**
 - Résolution spatiale : 20 km
@@ -60,7 +60,7 @@
 
 **Contribution relative de chaque variable à la prédiction du SOC**
 
-![Feature Importance - Random Forest](img/plot_feature_importance.png)
+![Feature Importance - Random Forest](outputs/plot_feature_importance.png)
 
 **Classement des variables:**
 
@@ -78,8 +78,8 @@
 
 ### 📄 Rapport complet & Détails techniques
 
-**[📥 Télécharger le rapport HTML complet](./outputs/rapport_SOC_Maroc.html)**
-
+**[📥 Voir le rapport HTML complet](outputs/report.html)**
+**[📥 Voir le rapport HTML complet](https://htmlpreview.github.io/?https://github.com/VOTRE-USER/farmCarbonR/blob/main/outputs/report.html)**
 Le rapport incluut :
 - ✅ Statistiques descriptives des données d'entrée
 - ✅ Résultats détaillés du modèle Random Forest (OOB, R², RMSE)
