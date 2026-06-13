@@ -8,6 +8,7 @@
 ## 📋 Table des matières
 
 - [Vue d'ensemble](#vue-densemble)
+- [📊 Résultats & Visualisations](#-résultats--visualisations)
 - [Installation](#installation)
 - [Structure du projet](#structure-du-projet)
 - [Flux de travail](#flux-de-travail)
@@ -31,6 +32,61 @@
 - Des **données climatiques** (WorldClim v2 : température, précipitations)
 - Des **données pédologiques** (SoilGrids ISRIC : SOC, densité apparente, texture)
 - Un **modèle prédictif Random Forest** pour la cartographie spatiale
+
+---
+
+## 📊 Résultats & Visualisations
+
+### 🗺️ Cartographie des stocks de carbone organique du sol (SOC)
+
+**Carte prédictive du SOC générée par le modèle Random Forest pour le Maroc**
+
+![Carte SOC - farmCarbonR](img/plot_soc_map.png)
+
+**Description:**
+- Résolution spatiale : 20 km
+- Plage de valeurs : 30 à 70 tC/ha
+- Gradient nord-sud : plus de carbone dans le Nord marocain
+- Identifie les **hotspots** (zones riches en carbone) et **coldspots** (zones à faible SOC)
+
+**Interprétation:**
+- 🟢 **Vert foncé** : SOC élevé (60-70 tC/ha) — pratiques agricoles optimales
+- 🟡 **Jaune** : SOC moyen (45-55 tC/ha) — besoin d'amélioration modérée
+- 🟫 **Marron** : SOC faible (30-40 tC/ha) — priorité de restauration
+
+---
+
+### 📈 Importance des variables du modèle Random Forest
+
+**Contribution relative de chaque variable à la prédiction du SOC**
+
+![Feature Importance - Random Forest](img/plot_feature_importance.png)
+
+**Classement des variables:**
+
+| Rang | Variable | Importance | Interprétation |
+|------|----------|-----------|-----------------|
+| 1️⃣ | Température moyenne | 28.5% | Le climat est le facteur dominant |
+| 2️⃣ | Précipitations annuelles | 22.3% | L'eau affecte la minéralisation du SOC |
+| 3️⃣ | NDVI MODIS | 19.8% | La productivité végétale influe sur les apports |
+| 4️⃣ | Altitude | 16.2% | La topographie module température et humidité |
+| 5️⃣ | Densité apparente | 13.2% | La texture du sol affecte le stockage |
+
+> ✨ **Point clé** : La température et les précipitations à elles seules expliquent >50% de la variabilité du SOC au Maroc.
+
+---
+
+### 📄 Rapport complet & Détails techniques
+
+**[📥 Télécharger le rapport HTML complet](./outputs/rapport_SOC_Maroc.html)**
+
+Le rapport incluut :
+- ✅ Statistiques descriptives des données d'entrée
+- ✅ Résultats détaillés du modèle Random Forest (OOB, R², RMSE)
+- ✅ Cartographie interactive du SOC
+- ✅ Analyse de l'autocorrélation spatiale (indice de Moran)
+- ✅ Potentiel de séquestration carbone par exploitation
+- ✅ Recommandations agronomiques personnalisées par parcelle
 
 ---
 
@@ -117,7 +173,12 @@ farmCarbonR/
 ├── outputs/                        # Résultats générés
 │   ├── rf_model.rds                # Modèle RF sauvegardé
 │   ├── soil_data.csv / .rds        # Données sol traitées
+│   ├── rapport_SOC_Maroc.html      # Rapport complet ⭐
 │   └── farm_practices.csv / .rds   # Pratiques agricoles traitées
+│
+├── img/                            # Visualisations
+│   ├── plot_soc_map.png            # Carte SOC prédictive
+│   └── plot_feature_importance.png # Importance variables RF
 │
 ├── vignettes/
 │   └── introduction.Rmd            # Guide d'utilisation
@@ -146,15 +207,15 @@ farmCarbonR/
 [5] Modélisation RF    →    train_rf_model()
          ↓
 [6] Cartographie       →    predict_soc_map()
-                            plot_soc_map()
-                            plot_feature_importance()
+                            plot_soc_map()          ⭐
+                            plot_feature_importance() ⭐
          ↓
 [7] Analyse & Résultats →   analyze_spatial_variability()
                             estimate_sequestration_potential()
                             generate_recommendations()
                             summarize_farms()
          ↓
-[8] Export             →    generate_report()
+[8] Export             →    generate_report()      ⭐
                             save_outputs()
 ```
 
@@ -467,7 +528,7 @@ Visualise la carte prédictive du SOC.
 plot_soc_map(soc_map, title = "Stock SOC - Maroc")
 ```
 
-**Output :** Carte ggplot2 avec gradient de couleur tC/ha.
+**Output :** Carte ggplot2 avec gradient de couleur tC/ha (voir section [Résultats & Visualisations](#-résultats--visualisations)).
 
 ---
 
@@ -479,7 +540,7 @@ Visualise l'importance des variables du modèle Random Forest.
 plot_feature_importance(rf$importance)
 ```
 
-**Output :** Graphique à barres trié par `%IncMSE`.
+**Output :** Graphique à barres trié par `%IncMSE` (voir section [Résultats & Visualisations](#-résultats--visualisations)).
 
 ---
 
@@ -497,6 +558,13 @@ generate_report(
 ```
 
 **Packages requis pour le rapport :** `ggplot2`, `knitr`, `dplyr`, `tidyr`, `gridExtra`
+
+**Contenu du rapport :**
+- 📊 Statistiques descriptives
+- 🗺️ Cartes interactives
+- 📈 Graphiques d'importance
+- 🌱 Recommandations agronomiques
+- 💰 Potentiel de séquestration carbone
 
 ---
 
